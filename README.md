@@ -12,6 +12,7 @@ mp4,png,jpgが設定できます。
 ですが本ソフトは上で書いたとおりアプリに一切手を加えないので違反にはなりません。  
 Discordで壁紙を楽しめます！  
 
+[ダウンロード](https://github.com/tasuren/FreedomWall/releases/)
 ## 使用例
 ### Discord
 ![FreedomWall_Image1](https://rtdbot.web.fc2.com/FreedomWall_Discord.jpg)
