@@ -10,7 +10,6 @@ r"""
    \ \/  \/ / _` | | |      by tasuren
     \  /\  / (_| | | |                     
      \/  \/ \__,_|_|_|                     
-
 """
 
 from util.win32 import GetActiveWindow,GetWindowRect,setClickthrough,GetWindow
@@ -32,7 +31,7 @@ class Wallcord():
 
         self.targets = list(self.data["windows"].keys())
 
-        self.window_title = "tk"
+        self.window_title = "FredomWall"
         self.window_show = True
         self.video = TkPlayer("")
         self.now_window = ""
