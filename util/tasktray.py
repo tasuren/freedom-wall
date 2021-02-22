@@ -9,7 +9,7 @@ from json import load,dump
 from PIL import Image
 
 
-credit_text = """# Freedom Wall 1.1.0
+credit_text = """# Freedom Wall 1.1.1
 開発言語：Python
 開発者　：tasuren
 
