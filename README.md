@@ -1,4 +1,5 @@
-![FreedomWall_Icon](http://tasuren.syanari.com/pic/FreedomWall/freedomwall.png)
+![FreedomWall_Icon](http://tasuren.syanari.com/pic/FreedomWall/freedomwall.png)  
+![GitHub all releases](https://img.shields.io/github/downloads/tasuren/FreedomWall/total) ![GitHub release (latest by date)](https://img.shields.io/github/v/release/tasuren/FreedomWall)
 # FreedomWall
 自分の好きな壁紙をどんなウィンドウでも設定できるソフト。  
 mp4,png,jpgが設定できます。  
