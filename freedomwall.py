@@ -112,7 +112,7 @@ class Wallcord():
                 q()
                 self.q.pop(0)
 
-        self.root.after(int(1/self.video.fps*100),self.video_player)
+        self.root.after(int(1/self.video.fps*100) if self.video else 10,self.video_player)
 
     # Discord開くときだけウィンドウを表示するためのループ。
     def discord_and_open(self):
