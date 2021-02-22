@@ -116,7 +116,6 @@ class TaskTray():
         self.root.quit()
         self.window.video = None
         self.icon.shutdown()
-        exit()
 
     # 実行。
     def run(self):
