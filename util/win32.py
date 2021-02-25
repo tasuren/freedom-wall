@@ -35,13 +35,3 @@ def setClickthrough(hwnd):
         win32gui.SetWindowLong(hwnd,win32con.GWL_EXSTYLE,styles)
     except Exception as e:
         print(e)
-
-
-# メッセージボックス
-def MessageBoxInfo(title,desc):
-    win32gui.MessageBox(0,desc,title,0x00000040)
-
-
-# 動作テスト用
-if __name__ == "__main__":
-    print(GetWindow("ffdsahfdsa","bubun"))
