@@ -46,7 +46,7 @@ class TaskTray():
         with open("data.json","r") as f:
             self.data = load(f)
         credit_text = credit_text.replace("!version!",self.version)
-        
+
         if self.version in ["1.1.1","1.1.0","1.0.0"]:
             messagebox.showwarning("FreedomWall","バージョンとFreedomWallのプログラムがあいませんでした。\n再ダウンロードしてください。")
             self.window.onoff = False
@@ -79,7 +79,7 @@ class TaskTray():
 
         alpha = simpledialog.askstring("FreedomWall","壁紙の透明度を入力してください。\nデフォルトは0.2です。\n元の背景が白の場合は0.3あたりの数値が良いです。\n元の背景が黒の場合は0.1あたりの数値が良いです。")
         if not alpha:
-            alpha = 0.2
+            return
         try:
             alpha = float(alpha)
         except:
@@ -110,7 +110,11 @@ class TaskTray():
         # メインスレッドのdataを再読み込みさせる。
         self.window.reload()
 
-        self.window.now = ""
+        self.window.now = {
+            "path"     : "",
+            "alpha"    : 0,
+            "exception": []
+        }
         messagebox.showinfo("FreedomWall","設定しました。")
 
     # 壁紙の削除。
@@ -129,7 +133,11 @@ class TaskTray():
         # メインスレッドのdataを再読み込みさせる。
         self.window.reload()
 
-        self.window.now = ""
+        self.window.now = {
+            "path"     : "",
+            "alpha"    : 0,
+            "exception": []
+        }
         messagebox.showinfo("FreedomWall","その設定を削除しました。")
 
     # 壁紙一覧。
