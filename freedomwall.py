@@ -41,7 +41,11 @@ class Wallcord():
         self.now_window = ""
         self.onoff = True
         # 表示中の壁紙のパス。
-        self.now = ""
+        self.now = {
+            "path"     : "",
+            "alpha"    : 0,
+            "exception": []
+        }
         # メインスレッドで実行したい関数をタスクトレイから入れるためのリスト。
         # ループで存在確認して実行する。
         self.q = []
@@ -106,10 +110,10 @@ class Wallcord():
 
         # 壁紙再生。
         # 未設定じゃない時のみ実行する。
-        if self.now != "" and self.onoff:
+        if self.now != {"path":"","alpha":0,"exception":[]} and self.onoff:
             # 他のウィンドウになったらそのウィンドウの壁紙に変更
-            if self.now != self.video.path:
-                self.video = TkPlayer(self.now)
+            if self.now["path"] != self.video.path:
+                self.video = TkPlayer(self.now["path"])
 
             # ターゲットのウィンドウが表示されている時だけ実行する。
             if self.window_show:
@@ -134,20 +138,20 @@ class Wallcord():
                     for target in self.targets:
                         # パスと透明度をだす。
                         data = self.data["windows"][target]
-                        path,alpha = data["path"],data["alpha"]
 
                         # `target in window_name`は壁紙設定ウィンドウかどうか調べるもの。
                         # `any(not e in window_name for e in data["exception"])`は例外ウィンドウではないか調べる。
                         run = target in window_name and all(not e in window_name for e in data["exception"])
                         if run or self.window_title == window_name:
                             # 壁紙のパスが違うパスだったら新しいパスに更新する。
-                            if self.now != path:
-                                self.now = path
+                            # それと透明度を変更しとく。
+                            if self.now != data:
+                                self.root.attributes("-alpha",data["alpha"])
+                                self.now = data
                                 self.now_window = target
 
                             # もし壁紙ウィンドウを非表示にしているかつ、今壁紙を表示すべきなら、壁紙ウィンドウを表示する。
                             if not self.window_show and run:
-                                self.root.attributes("-alpha",alpha)
                                 self.root.deiconify()
                                 self.window_show = True
                                 self.root.attributes("-topmost",True)
@@ -164,17 +168,25 @@ class Wallcord():
 
                         else:
                             # 違うウィンドウになったから壁紙のパスを空にする。
-                            self.now = ""
+                            self.now = {
+                                "path"     : "",
+                                "alpha"    : 0,
+                                "exception": []
+                            }
 
                     # もし違うウィンドウになって壁紙のパスが空じゃないならウィンドウを非表示にする。
-                    if self.window_show and not self.now:
+                    if self.window_show and self.now == {"path":"","alpha":0,"exception":[]}:
                         self.root.withdraw()
                         self.window_show = False
                         self.root.attributes("-topmost",False)
 
-                    # ターゲットがない際は実行しないようにする。
-                    if not self.window_show:
-                        self.now = ""
+                # ターゲットがない際は実行しないようにする。
+                if not self.window_show:
+                    self.now = {
+                        "path"     : "",
+                        "alpha"    : 0,
+                        "exception": []
+                    }
 
         self.root.after(10,self.discord_and_open)
 
