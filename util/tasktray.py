@@ -9,7 +9,7 @@ from json import load,dump
 from PIL import Image
 
 
-credit_text = """# Freedom Wall 1.1.1
+credit_text = """# Freedom Wall !version!
 開発言語：Python
 開発者　：tasuren
 
@@ -37,11 +37,20 @@ Copyright (c) 2017 INFINIDAT
 
 class TaskTray():
     def __init__(self,wallcord):
+        global credit_text
+
         self.window = wallcord
         self.root = self.window.root
+        self.version = self.window.version
 
         with open("data.json","r") as f:
             self.data = load(f)
+        credit_text = credit_text.replace("!version!",self.version)
+        
+        if self.version in ["1.1.1","1.1.0","1.0.0"]:
+            messagebox.showwarning("FreedomWall","バージョンとFreedomWallのプログラムがあいませんでした。\n再ダウンロードしてください。")
+            self.window.onoff = False
+            self.window.q.append(self.exit)
 
         # メインスレッドじゃないとTkinterメソッドを実行できない。
         # だからメインスレッドのFreedomWallクラスのself.qに実行したいのを追加する。
@@ -61,9 +70,13 @@ class TaskTray():
 
     # 壁紙の設定。
     def setting(self):
+        # simpledialog.askstringで入力ボックスを表示する。
+        # それを使い設定をする。
+
         title = simpledialog.askstring("FreedomWall","設定したいウィンドウのタイトルにある文字を入力してください。")
         if not title:
             return
+
         alpha = simpledialog.askstring("FreedomWall","壁紙の透明度を入力してください。\nデフォルトは0.2です。\n元の背景が白の場合は0.3あたりの数値が良いです。\n元の背景が黒の場合は0.1あたりの数値が良いです。")
         if not alpha:
             alpha = 0.2
@@ -72,18 +85,31 @@ class TaskTray():
         except:
             messagebox.showwarning("FreedomWall","0.1 ~ 1 の間を設定してください。")
             return
-        file_name = filedialog.askopenfilename(filetypes=[("動画ファイル","*.mp4"),("画像ファイル","*.png;*.jpg")])
-        if not file_name:
+
+        exception = simpledialog.askstring("FreedomWall","例外ウィンドウのタイトルにある文字を入力してください。\nコンマ( , )を使うことで複数追加できます。\n\n例えばLINEを登録したあとにLINEについてのウェブサイトを閲覧したとします。\nするとブラウザのタイトルにLINEが入り被りが発生します。\nそれを防ぐためにブラウザのタイトルを入れることをおすすめします。")
+        exception = exception.split(",") if exception else []
+
+        # 壁紙ファイルを取得する。
+        file_path = filedialog.askopenfilename(filetypes=[("壁紙ファイル","*.png;*.jpg;*.mp4")])
+        if not file_path:
             return
 
+        # 存在確認をする。
         if not GetWindow(title,"bubun"):
             messagebox.showwarning("FreedomWall",f"{title}があるタイトルのウィンドウが見つかりませんでした。")
             return
 
-        self.data["windows"][title] = [file_name,alpha]
+        self.data["windows"][title] = {
+            "path"      : file_path,
+            "alpha"     : alpha,
+            "exception" : exception
+        }
         with open("data.json","w") as f:
             dump(self.data,f,indent=4)
+        
+        # メインスレッドのdataを再読み込みさせる。
         self.window.reload()
+
         self.window.now = ""
         messagebox.showinfo("FreedomWall","設定しました。")
 
@@ -95,10 +121,14 @@ class TaskTray():
         if not title in self.data["windows"]:
             messagebox.showwarning("FreedomWall","その設定が見つかりませんでした。")
             return
+
         del self.data["windows"][title]
         with open("data.json","w") as f:
             dump(self.data,f,indent=4)
+
+        # メインスレッドのdataを再読み込みさせる。
         self.window.reload()
+
         self.window.now = ""
         messagebox.showinfo("FreedomWall","その設定を削除しました。")
 
@@ -119,5 +149,4 @@ class TaskTray():
 
     # 実行。
     def run(self):
-        messagebox.showinfo("FreedomWall","起動しました。\n設定する場合は右下のタスクトレイから月のマークを右クリックして使用してください。")
         self.icon.start()
