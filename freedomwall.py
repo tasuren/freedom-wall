@@ -12,6 +12,7 @@ r"""
      \/  \/ \__,_|_|_|                     
 """
 
+
 from util.win32 import GetActiveWindow,GetWindowRect,setClickthrough,GetWindow
 from util.tasktray import TaskTray
 from util.player import TkPlayer
@@ -32,11 +33,17 @@ class Wallcord():
         self.targets = list(self.data["windows"].keys())
 
         self.window_title = "FredomWall"
-        self.window_show = True
+        self.window_show = False
+        self.version = "1.2.1"
+
+        # 壁紙を映すためのクラスのインスタンス化。
         self.video = TkPlayer("")
         self.now_window = ""
         self.onoff = True
+        # 表示中の壁紙のパス。
         self.now = ""
+        # メインスレッドで実行したい関数をタスクトレイから入れるためのリスト。
+        # ループで存在確認して実行する。
         self.q = []
 
         self.create_window()
@@ -90,9 +97,16 @@ class Wallcord():
     # 壁紙再生と設定画面実行のループ。
     def video_player(self):
 
+        # 設定などのタスクトレイから実行するやつをメインスレッドで実行するためのもの。
+        # Tkinterのメソッドはメインスレッドからじゃないと実行できないためキューに追加してここで実行する。
+        if self.q:
+            for q in self.q:
+                q()
+                self.q.pop(0)
+
         # 壁紙再生。
         # 未設定じゃない時のみ実行する。
-        if self.now != "" or self.onoff:
+        if self.now != "" and self.onoff:
             # 他のウィンドウになったらそのウィンドウの壁紙に変更
             if self.now != self.video.path:
                 self.video = TkPlayer(self.now)
@@ -104,14 +118,6 @@ class Wallcord():
                 if self.image:
                     self.canvas.create_image(0,0,image=self.image,anchor=NW)
 
-
-        # 設定などのタスクトレイから実行するやつをメインスレッドで実行するためのもの。
-        # Tkinterのメソッドはメインスレッドからじゃないと実行できないためキューに追加してここで実行する。
-        if self.q:
-            for q in self.q:
-                q()
-                self.q.pop(0)
-
         self.root.after(int(1/self.video.fps*100) if self.video else 10,self.video_player)
 
     # Discord開くときだけウィンドウを表示するためのループ。
@@ -119,55 +125,52 @@ class Wallcord():
         # ONのときだけ
         if self.onoff:
 
-            # --handle,window_name = GetActiveWindow()
-            # WinAPIを使用してアクティブのウィンドウを取得する。
-
-            # -- if "Discord" in window_name or self.window_title == window_name:
-            # Discordがアクティブか確認する。
-            # このときtkが反応することがあるから、それも確認対象にする。
-
-            # -- if self.now != self.data["windows"][target]:
-            # 今のウィンドウが変わったらその壁紙を設定する。
-
-            # -- if ? self.window_show and target in window_name:
-            # ウィンドウ表示非表示動作をします。
-            # self.whindow_showで無駄な動作をなくす。
-            # self.root.attributes("-alpha",int)でウィンドウを薄くする。
-            # なくさないとウィンドウ移動がしずらくなるなど支障が出る。
-            # attributes("-topmost")で常前に行くようにする
-
-            # -- if self.window_title != window_name:
-            # Discordがアクティブの状態のみ実行するものです。
-            # WinAPIで座標を取得して調整。
-
             handle,window_name = GetActiveWindow()
             if handle != 0:
-                # 開発中の誤検出用にSubllimeTextは無視する。
-                # 対象が空の場合も無視する。
-                if not "Sublime Text" in window_name and self.targets:
+
+                # 対象が空の場合無視する。
+                if self.targets:
+                    
                     for target in self.targets:
-                        if target in window_name or self.window_title == window_name:
-                            path,alpha = self.data["windows"][target]
+                        # パスと透明度をだす。
+                        data = self.data["windows"][target]
+                        path,alpha = data["path"],data["alpha"]
+
+                        # `target in window_name`は壁紙設定ウィンドウかどうか調べるもの。
+                        # `any(not e in window_name for e in data["exception"])`は例外ウィンドウではないか調べる。
+                        run = target in window_name and all(not e in window_name for e in data["exception"])
+                        if run or self.window_title == window_name:
+                            # 壁紙のパスが違うパスだったら新しいパスに更新する。
                             if self.now != path:
                                 self.now = path
                                 self.now_window = target
 
-                            if not self.window_show and target in window_name:
+                            # もし壁紙ウィンドウを非表示にしているかつ、今壁紙を表示すべきなら、壁紙ウィンドウを表示する。
+                            if not self.window_show and run:
                                 self.root.attributes("-alpha",alpha)
                                 self.root.deiconify()
                                 self.window_show = True
                                 self.root.attributes("-topmost",True)
 
+                            # もし検知したアクティブウィンドウが壁紙ウィンドウじゃないならウィンドウサイズを適切なのに変更する。
                             if self.window_title != window_name:
                                 x0,y0,x1,y1 = GetWindowRect(handle)
                                 sa = 0
                                 self.width,self.height = x1-x0,y1-y0
                                 self.root.geometry(f"{self.width}x{self.height}+{x0-sa}+{y0-sa}")
 
-                        elif self.window_show and target == self.now_window:
-                            self.root.withdraw()
-                            self.window_show = False
-                            self.root.attributes("-topmost",False)
+                            # 他の壁紙とかぶった際にチカチカ防止のため壁紙のセットは一回きりにする。
+                            break
+
+                        else:
+                            # 違うウィンドウになったから壁紙のパスを空にする。
+                            self.now = ""
+
+                    # もし違うウィンドウになって壁紙のパスが空じゃないならウィンドウを非表示にする。
+                    if self.window_show and not self.now:
+                        self.root.withdraw()
+                        self.window_show = False
+                        self.root.attributes("-topmost",False)
 
                     # ターゲットがない際は実行しないようにする。
                     if not self.window_show:
@@ -176,10 +179,12 @@ class Wallcord():
         self.root.after(10,self.discord_and_open)
 
 
+
 root = Tk()
 wallcord = Wallcord(root)
 tasktray = TaskTray(wallcord)
     
 
+# タスクトレイは別スレッドにて実行する。
 Thread(target=lambda:tasktray.run()).start()
 root.mainloop()
