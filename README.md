@@ -1,4 +1,3 @@
-![FreedomWall_Icon](http://tasuren.syanari.com/pic/FreedomWall/freedomwall.png)  
 ![GitHub all releases](https://img.shields.io/github/downloads/tasuren/FreedomWall/total) ![GitHub release (latest by date)](https://img.shields.io/github/v/release/tasuren/FreedomWall) [![Discord](https://img.shields.io/discord/777430548951728149?label=chat&logo=discord)](https://discord.gg/kfMwZUyGFG)
 # FreedomWall
 自分の好きな壁紙をどんなウィンドウでも設定できるソフト。  
@@ -6,7 +5,9 @@ mp4,png,jpgが設定できます。
 壁紙を映した半透明のウィンドウをアプリの上に表示するだけの仕組みです。  
 アプリに手を加えないため、大抵のソフトが利用規約違反しないで壁紙ができます。  
 ですが、使用してなにかあっても自己責任ですので注意してください。  
-  
+
+**現在Rustでプログラムの書き直しをしています。アップデートがあれば知りたいという人は、是非スターをつけるか私をフォローしてください。**
+
 例えばDiscordのアプリでは、BetterDiscordという壁紙を設定できるソフトが既にありました。  
 利用規約では改造や複製やDiscordの仕組みを探るなどは禁止です。  
 なのでBetterDiscordは利用規約違反になってしまいます。  
