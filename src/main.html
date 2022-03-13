@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta charset="utf-8">
+  <title>FreedomWall's wallpaper</title>
+  <meta name="description" content="FreedomWallの壁紙表示用のWebページです。">
+  <meta name="author" content="tasuren">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style type="text/css">
+    * {
+      padding: 0;
+      margin: 0;
+    }
+    body {
+      background-color: black;
+      overflow: hidden;
+    }
+
+      /*background-image: url("https://i.ytimg.com/vi/0n3M_azpoZM/maxresdefault.jpg");*/
+      /*background-image: url("https://get.wallhere.com/photo/illustration-anime-anime-girls-vehicle-Kino-Kino's-Journey-screenshot-computer-wallpaper-141474.jpg");*/
+    #background {
+      object-fit: fill;
+    }
+  </style>
+  <script type="text/javascript">
+    let resize = function () {
+      for (let element of document.getElementsByClassName("background")) {
+        element.style.width = `${window.innerWidth}px`;
+        element.style.height = `${window.innerHeight}px`;
+      };
+    };
+    window.resize = resize;
+    window.onload = resize;
+  </script>
+<body>
+  <div id="background-container">
+    <!--
+      <img class="background" src="https://get.wallhere.com/photo/illustration-anime-anime-girls-vehicle-Kino-Kino's-Journey-screenshot-computer-wallpaper-141474.jpg" />
+    -->
+      <iframe class="background" src="https://www.youtube.com/embed/A2mJKg2g5TY?autoplay=1&loop=1&playlist=A2mJKg2g5TY&controls=0&disablekb=1" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope" allowfullscreen></iframe>
+  </div>
+</body>
+</html>
