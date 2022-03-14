@@ -34,10 +34,10 @@ use core_foundation::{
     base::CFIndex
 };
 
-use super::super::WallpaperTrait;
+use super::super::WindowTrait;
 
 
-pub struct Wallpaper {
+pub struct Window {
     pub webview: WebView,
     pub ns_window: *const Object,
     pub now_click_through: bool
@@ -103,7 +103,7 @@ extern {
 
 
 /// CFStringをStringにします。
-fn cfstring2str(text: CFStringRef) -> String {
+fn cfstring2string(text: CFStringRef) -> String {
     let mut result: Vec<u16> = Vec::new();
     for i in 0..unsafe { CFStringGetLength(text) } {
         result.push(unsafe {
@@ -114,59 +114,81 @@ fn cfstring2str(text: CFStringRef) -> String {
 }
 
 
+/// ウィンドウで一番前に表示されてるものを検索します。
+pub fn get_front(windows_name: Vec<String>, windows_rect: Vec<Vec<f64>>) -> Option<usize> {
+    for (index, (rect, name)) in windows_rect.iter().zip(windows_name).enumerate() {
+        if &name == "Dock" && rect[4] != 0.0 {
+            return Some(index)
+        };
+    };
+    None
+}
+
+
 /// 渡された文字列が名前に含まれるウィンドウのサイズを取得します。
-fn get_window(name: String) -> Vec<f64> {
-    let mut result: Vec<f64> = Vec::new();
+pub fn get_windows() -> (Vec<String>, Vec<Vec<f64>>) {
+    let mut windows_name: Vec<String> = Vec::new();
+    let mut windows_rect: Vec<Vec<f64>> = Vec::new();
+
     let windows = unsafe {
         CGWindowListCopyWindowInfo(
             kCGWindowListOptionOnScreenOnly | kCGWindowListExcludeDesktopElements,
             kCGNullWindowID
         )
     };
-    for i in 0..unsafe { CFArrayGetCount(windows) } {
-        let data = unsafe { CFArrayGetValueAtIndex(windows, i) as CFDictionaryRef };
+    for index in 0..unsafe { CFArrayGetCount(windows) } {
+        let data = unsafe { CFArrayGetValueAtIndex(windows, index) as CFDictionaryRef };
 
-        let title = cfstring2str(
+        let title = cfstring2string(
             match get_cfdictionary_value_from_str(
                 data, "kCGWindowOwnerName"
             ) { Some(value) => value as CFStringRef, _ => continue }
         );
 
-        if !title.is_empty() && title.contains(&name) {
+        if !title.is_empty() {
             // もしタイトルに指定された名前が含まれているのなら。
+            let before_index = index as usize - 1;
+            let same_before = windows_name[before_index] == title;
+
+            // サイズを取得する。
             let rect = match get_cfdictionary_value_from_str(
                 data, "kCGWindowBounds"
             ) { Some(value) => value as CFDictionaryRef, _ => continue };
             let mut tentative: Vec<f64> = Vec::new();
+
             let mut update = false;
             for (i, key) in ["Height", "Width", "X", "Y"].iter().enumerate() {
-                match get_cfnumber(
-                    match get_cfdictionary_value_from_str(rect, key) {
-                        Some(value) => value, _ => { update = false; break; }
-                    }
-                ) {
-                    Some(value) => {
-                        tentative.push(value as f64);
-                        if result.is_empty() || result[i] < tentative[i] {
-                            update = true;
-                        };
-                    },
-                    _ => ()
-                }
+                tentative.push(
+                    get_cfnumber(
+                        get_cfdictionary_value_from_str(rect, key)
+                            .expect("CFDictionaryからkCGWindowBoundsの値を取り出すのに失敗しました。")
+                    ).expect("CFNumberの値の取り出しに失敗しました。") as f64
+                );
+                if !windows_rect.is_empty() || !same_before || windows_rect[before_index][i] < tentative[i] {
+                    // 一番サイズのでかいウィンドウが対象になるように前取得したやつをチェックする。
+                    update = true;
+                };
             };
+
             if update {
-                result = tentative;
+                if same_before { windows_name.pop(); windows_rect.pop(); };
+                tentative.push(get_cfnumber(
+                    get_cfdictionary_value_from_str(data, "kCGWindowLayer")
+                        .expect("CFDictionaryからkCGWindowLayerの値の取り出しに失敗しました。")
+                ).expect("CFNumberの値の取り出しに失敗しました。") as f64);
+                windows_name.push(title);
+                windows_rect.push(tentative);
             };
         };
     };
-    result
+    (windows_name, windows_rect)
 }
 
 
-impl WallpaperTrait for Wallpaper {
+impl WindowTrait for Window {
     fn new(webview: WebView) -> Self {
         let ns_window = webview.window().ns_window() as *const Object;
-        let mut wallpaper = Wallpaper {
+        let mut wallpaper = Window {
             webview: webview, ns_window: ns_window,
             now_click_through: false
         };
@@ -193,14 +215,9 @@ impl WallpaperTrait for Wallpaper {
         );
     }
 
-    fn process_position(&self) {
-        // 対象のウィンドウのサイズと座標を取得する。
-        let rect = get_window("Discord".to_string());
-        if rect.len() >= 4 {
-            // ウィンドウの位置を移動する。
-            self.set_rect(rect[2], rect[3], rect[1], rect[0]);
-            // println!("{:?}", rect);
-        };
+    fn set_rect_from_vec(&self, rect: Vec<f64>) {
+        // ウィンドウの位置を移動する。
+        self.set_rect(rect[2], rect[3], rect[1], rect[0]);
     }
 
     fn toggle_click_through(&mut self) {

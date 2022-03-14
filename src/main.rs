@@ -12,16 +12,18 @@ use wry::{
     webview::WebViewBuilder, http::ResponseBuilder
 };
 
-mod wallpaper;
+mod window;
 mod platform;
+mod data_manager;
 
-use wallpaper::{ Wallpaper, WallpaperTrait };
-
-
-const VERSION: &str = "2.0.0a";
+use window::{ Window, WindowTrait };
 
 
-fn main() -> wry::Result<()> {  
+pub const VERSION: &str = "2.0.0a";
+pub const APPLICATION_NAME: &str = "FreedomWall";
+
+
+fn main() -> wry::Result<()> {
     let event_loop = EventLoop::new();
     let window = WindowBuilder::new()
         .with_title("Freedom Wall")
@@ -37,7 +39,7 @@ fn main() -> wry::Result<()> {
         .with_url("wry://src/main.html")?
         .build()?;
 
-    let window_manager = Wallpaper::new(webview);
+    let window_manager = Window::new(webview);
     let update_interval = Duration::from_secs_f32(0.1);
 
     event_loop.run(move |event, _, control_flow| {

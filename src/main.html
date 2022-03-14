@@ -16,14 +16,12 @@
       background-color: black;
       overflow: hidden;
     }
-
-      /*background-image: url("https://i.ytimg.com/vi/0n3M_azpoZM/maxresdefault.jpg");*/
-      /*background-image: url("https://get.wallhere.com/photo/illustration-anime-anime-girls-vehicle-Kino-Kino's-Journey-screenshot-computer-wallpaper-141474.jpg");*/
     #background {
       object-fit: fill;
     }
   </style>
   <script type="text/javascript">
+    // ウィンドウのサイズに壁紙のサイズを合わせる。
     let resize = function () {
       for (let element of document.getElementsByClassName("background")) {
         element.style.width = `${window.innerWidth}px`;
@@ -37,8 +35,9 @@
   <div id="background-container">
     <!--
       <img class="background" src="https://get.wallhere.com/photo/illustration-anime-anime-girls-vehicle-Kino-Kino's-Journey-screenshot-computer-wallpaper-141474.jpg" />
-    -->
       <iframe class="background" src="https://www.youtube.com/embed/A2mJKg2g5TY?autoplay=1&loop=1&playlist=A2mJKg2g5TY&controls=0&disablekb=1" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope" allowfullscreen></iframe>
+    -->
+    <iframe class="background" src="https://www.youtube.com/embed/RTh8tTAGNA0?autoplay=1&loop=1&playlist=RTh8tTAGNA0&controls=0&disablekb=1" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope" allowfullscreen></iframe>
   </div>
 </body>
 </html>
