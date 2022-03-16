@@ -24,7 +24,7 @@ use super::{
 /// ウィンドウ等を管理するための構造体です。
 pub struct Manager<'a> {
     pub event_loop: EventLoopWindowTarget<()>,
-    pub windows: HashMap<&'a str, Window>,
+    pub windows: Vec<Window<'a>>,
     pub data: DataManager
 }
 
@@ -34,14 +34,14 @@ impl<'a> Manager<'a> {
     pub fn new(event_loop: EventLoopWindowTarget<()>) -> Option<Self> {
         match DataManager::new() {
             Ok(data) => Some(
-                Self { event_loop: event_loop, windows: HashMap::new(), data: data }
+                Self { event_loop: event_loop, windows: Vec::new(), data: data }
             ),
             Err(message) => { error(&message); None }
         }
     }
 
     /// 背景ウィンドウを追加します。
-    pub fn add(&'a mut self, target: &'a str, data: Wallpaper) -> wry::Result<()> {
+    pub fn add(&mut self, data: &'a Wallpaper) -> wry::Result<()> {
         let window = WindowBuilder::new()
             .with_title(format!("FreedomWall - {} Wallpaper Window", data.name))
             .with_decorations(false)
@@ -67,13 +67,18 @@ impl<'a> Manager<'a> {
                 &data.detail.setting
             ).expect("クエリパラメータの処理に失敗しました。").to_string())?
             .build()?;
-        self.windows.insert(target, Window::new(data, webview));
+        self.windows.push(Window::new(data, webview));
         Ok(())
     }
 
     /// 指定された背景ウィンドウを削除します。
-    pub fn remove(&mut self, target: &str) {
-        self.windows.remove(target);
+    pub fn remove(&mut self, name: &str) {
+        for (index, window) in self.windows.iter().enumerate() {
+            if &window.wallpaper.name == name {
+                self.windows.remove(index);
+                break;
+            };
+        };
     }
 
     /// 背景ウィンドウの処理をします。
@@ -81,17 +86,32 @@ impl<'a> Manager<'a> {
     pub fn process_windows(&mut self) {
         let (titles, rects) = get_windows();
         let mut main = false;
+        let mut done = Vec::new();
         for (title, (rect, layer)) in titles.iter().zip(rects) {
             if title == "Dock" && layer != 0 { main = true; continue; };
-            // 背景の対象のウィンドウを検索する。
-            for (target, window) in self.windows.iter_mut() {
-                if target.contains(title) {
-                    // もし対象のウィンドウが見つかったのならそのウィンドウに背景ウィンドウを移動させる。
-                    window.set_rect_from_vec(&rect);
-                    window.set_click_through(if main { true } else { false });
+            // 背景の対象として設定されているか検索をする。
+            for target in self.data.general.wallpapers.iter() {
+                if target.targets.iter().any(|x| title.contains(x)) {
+                    // 背景の対象のウィンドウを検索する。
+                    for window in self.windows.iter_mut()
+                            .filter(|x| x.wallpaper.name == target.wallpaper) {
+                        // もし対象のウィンドウが見つかったのならそのウィンドウに背景ウィンドウを移動させる。
+                        window.set_rect_from_vec(&rect);
+                        window.set_click_through(if main { true } else { false });
+                        done.push(window.webview.window().id());
+                        continue;
+                    };
+                    /*self.add(
+                        self.data.get_wallpaper(target.wallpaper)
+                            .unwrap_or_else(|| {
+                                error(&format!("{}に対応する壁紙が見つかりませんでした。", target.wallpaper));
+                                panic!("Failed find wallpaper");
+                            })
+                    );*/
                 };
             };
             if main { main = false; };
-        }
+        };
+
     }
 }

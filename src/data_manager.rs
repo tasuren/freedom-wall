@@ -1,19 +1,22 @@
 //! FreedomWall - DataManager
 
 use std::{
-    collections::HashMap, env::args, path::PathBuf,
-    ffi::OsStr, fs::{ File, read_to_string },
+    collections::HashMap, env::args, path::{ Path, PathBuf },
+    ffi::OsStr, fs::{ File, read_to_string, create_dir },
     io::Write, cell::RefCell
 };
 
 use serde::{ Serialize, Deserialize };
-use serde_json::{ to_string, from_str };
+use serde_json::{ to_string_pretty, from_str };
 use platform_dirs::AppDirs;
 
-use super::APPLICATION_NAME;
+use super::{ utils::error, APPLICATION_NAME };
 
 
 const FAILED_JSON: &str = "JSON生成時にエラーが発生しました。";
+const DATA_DEFAULT: &str = r#"{
+    "language": "ja", "wallpapers": [], "updateInterval": 0.1
+}"#;
 
 
 //  壁紙設定
@@ -30,14 +33,13 @@ fn get_application_name() -> String {
 
 /// 渡されたパスに設定ファイルを保存する場所のパスを追加します。
 fn add_setting_path(path: &str) -> String {
-    format!(
-        "{}/{}",
-        AppDirs::new(Some(&get_application_name()), false)
-            .expect("設定を保存する場所のパスが見つかりませんでした。")
-            .data_dir.to_str()
-            .expect("設定を保存する場所のパスの処理中になんらかのエラーが発生しました。"),
-        path
-    )
+    let data_dir = AppDirs::new(Some(&get_application_name()), false)
+        .expect("設定を保存する場所のパスが見つかりませんでした。")
+        .data_dir;
+    let app_dir = data_dir.to_str()
+        .expect("設定を保存する場所のパスの処理中になんらかのエラーが発生しました。");
+    if path.is_empty() { app_dir.to_string() }
+    else { format!("{}/{}", app_dir, path) }
 }
 
 
@@ -54,6 +56,7 @@ pub struct WallpaperJson {
 
 
 /// 壁紙の設定データの構造体です。
+#[derive(Serialize, Deserialize)]
 pub struct Wallpaper {
     pub name: String,
     pub path: String,
@@ -61,11 +64,20 @@ pub struct Wallpaper {
 }
 
 
+/// 背景対象となるウィンドウのデータの構造体です。
+#[derive(Serialize, Deserialize)]
+pub struct Target {
+    pub targets: Vec<String>,
+    pub exception: Vec<String>,
+    pub wallpaper: String
+}
+
+
 /// FreedomWallの設定ファイルの構造体です。
 #[derive(Serialize, Deserialize)]
 pub struct GeneralSetting {
     pub language: String,
-    pub wallpapers: Vec<Vec<String>>,
+    pub wallpapers: Vec<Target>,
     pub updateInterval: f32
 }
 
@@ -78,7 +90,7 @@ pub struct DataManager {
 }
 
 
-fn failed_read(path: String) -> String { format!("{}の読み込みにしっぱしました。", path) }
+fn failed_read(path: String) -> String { format!("{}の読み込みに失敗しました。", path) }
 
 
 /// 指定されたパスにあるファイル,フォルダのVecを取得します。
@@ -190,7 +202,7 @@ fn read_wallpapers<'a>() -> Result<Wallpapers, String> {
     let error = RefCell::new(String::new());
     let wallpapers = RefCell::new(Vec::new());
     search_files(
-        "wallpapers", vec!["index.html", "data.json"], |path, file_name, file, root| {
+        "wallpapers", vec!["index.html", "data.json"], |path, file_name, _, root| {
             if file_name == "data.json" {
                 if let Ok(raw) = read(path) {
                     if let Ok(data) = from_str::<WallpaperJson>(&raw) {
@@ -206,7 +218,7 @@ fn read_wallpapers<'a>() -> Result<Wallpapers, String> {
             };
         }
     )?;
-    if error.borrow().is_empty() { return Err(error.into_inner()) };
+    if !error.borrow().is_empty() { return Err(error.into_inner()) };
     Ok(wallpapers.into_inner())
 }
 
@@ -215,6 +227,33 @@ fn read_wallpapers<'a>() -> Result<Wallpapers, String> {
 /// もしデータが存在しない場合は壁紙プロファイルと拡張機能以外なら新規作成をします。
 impl DataManager {
     pub fn new() -> Result<Self, String> {
+        let path = &add_setting_path("");
+        if !Path::new(&path).exists() {
+            create_dir(path).unwrap_or_else(
+                |_| {
+                    error(&format!("設定フォルダの作成に失敗しました。\nPath:{}", path));
+                    panic!("Failed to mkdir setting folder");
+                }
+            );
+            // 初回起動時の場合は必要なファイルとフォルダ等を準備する。
+            for (file_name, default) in vec![
+                ("data.json", DATA_DEFAULT), ("wallpapers", "_dir_"), ("extensions", "_dir_")
+            ] {
+                let on_error = |detail| {
+                    error(&format!("{}の作成に失敗しました。\n{}", file_name, detail)); panic!();
+                };
+                let path = add_setting_path(file_name);
+                if !Path::new(&path).exists() {
+                    // もし必要なファイルまたはフォルダがまだないのなら新しく作る。
+                    if default == "_dir_" {
+                        create_dir(&path).unwrap_or_else(|_| on_error(format!("Path:{}", path)));
+                    } else {
+                        write(&path, default.to_string())
+                            .unwrap_or_else(on_error);
+                    };
+                };
+            };
+        };
         Ok(DataManager { general: read_setting()?, wallpapers: read_wallpapers()? })
     }
 
@@ -227,7 +266,7 @@ impl DataManager {
     /// 設定を書き込みます。
     pub fn write_setting(&self) -> Result<(), String> {
         write(
-            &add_setting_path("data.json"), to_string(&self.general)
+            &add_setting_path("data.json"), to_string_pretty(&self.general)
                 .expect(FAILED_JSON)
         )
     }
@@ -242,10 +281,20 @@ impl DataManager {
     pub fn write_wallpaper(&self, index: usize) -> Result<(), String> {
         match self.wallpapers.get(index) {
             Some(wallpaper) => write(
-                &format!("{}/data.json", wallpaper.path), to_string(&wallpaper.detail)
+                &format!("{}/data.json", wallpaper.path), to_string_pretty(&wallpaper.detail)
                     .expect(FAILED_JSON)
             ),
             _ => Err("壁紙が見つかりませんでした。".to_string())
         }
+    }
+
+    /// 壁紙の設定を取得します。
+    pub fn get_wallpaper(&self, name: String) -> Option<&Wallpaper> {
+        for wallpaper in self.wallpapers.iter() {
+            if wallpaper.name == name {
+                return Some(wallpaper);
+            };
+        };
+        None
     }
 }

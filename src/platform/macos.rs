@@ -40,11 +40,11 @@ use core_foundation::{
 use super::super::{ data_manager::Wallpaper, window::WindowTrait };
 
 
-pub struct Window {
+pub struct Window<'a> {
     pub webview: WebView,
-    ns_window: *const Object,
+    pub ns_window: *const Object,
     pub now_click_through: bool,
-    pub wallpaper: Wallpaper
+    pub wallpaper: &'a Wallpaper
 }
 
 
@@ -162,9 +162,9 @@ pub fn get_windows() -> (Vec<String>, Vec<(Vec<f64>, isize)>) {
         );
 
         if !title.is_empty() {
-            // もしタイトルに指定された名前が含まれているのなら。
-            let before_index = index as usize - 1;
-            let same_before = windows_name[before_index] == title;
+            if index == 0 { continue; };
+            let before_index = if windows_name.is_empty() { 0 } else { windows_name.len() - 1 };
+            let same_before = !windows_name.is_empty() && windows_name[before_index] == title;
 
             // サイズを取得する。
             let rect = match get_cfdictionary_value_from_str(
@@ -203,16 +203,16 @@ pub fn get_windows() -> (Vec<String>, Vec<(Vec<f64>, isize)>) {
 }
 
 
-impl WindowTrait for Window {
-    fn new(wallpaper: Wallpaper, webview: WebView) -> Self {
+impl<'a> WindowTrait<'a> for Window<'a> {
+    fn new(wallpaper: &'a Wallpaper, webview: WebView) -> Self {
         let ns_window = webview.window().ns_window() as *const Object;
-        let mut wallpaper = Window {
+        let mut window = Self {
             webview: webview, ns_window: ns_window,
             now_click_through: false, wallpaper: wallpaper
         };
-        wallpaper.set_transparent(0.2);
-        wallpaper.toggle_click_through();
-        wallpaper
+        window.set_transparent(0.2);
+        window.toggle_click_through();
+        window
     }
 
     fn set_transparent(&self, alpha: f64) {
