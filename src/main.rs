@@ -1,7 +1,7 @@
 //! FreedomWall by tasuren
 
 use std::{
-    rc::Rc,
+    cell::RefCell,
     time::{ Instant, Duration }
 };
 
@@ -30,7 +30,7 @@ fn main() -> wry::Result<()> {
     let mut manager = Manager::new(event_loop.clone()).expect("設定読み込みに失敗しました。");
     let update_interval = Duration::from_secs_f32(manager.data.general.updateInterval);
 
-    event_loop.run(move |event, _, control_flow| {
+    event_loop.run(|event, _, control_flow| {
         match event {
             Event::NewEvents(StartCause::Init) => {
                 println!("FreedomWall {} by tasuren", VERSION);

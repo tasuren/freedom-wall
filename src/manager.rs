@@ -83,7 +83,7 @@ impl<'a> Manager<'a> {
 
     /// 背景ウィンドウの処理をします。
     /// 設定されている背景ウィンドウの場所とサイズを対象のアプリに合わせます。
-    pub fn process_windows(&mut self) {
+    pub fn process_windows(&'a mut self) {
         let (titles, rects) = get_windows();
         let mut main = false;
         let mut done = Vec::new();
@@ -101,13 +101,13 @@ impl<'a> Manager<'a> {
                         done.push(window.webview.window().id());
                         continue;
                     };
-                    /*self.add(
+                    self.add(
                         self.data.get_wallpaper(target.wallpaper)
                             .unwrap_or_else(|| {
                                 error(&format!("{}に対応する壁紙が見つかりませんでした。", target.wallpaper));
                                 panic!("Failed find wallpaper");
                             })
-                    );*/
+                    );
                 };
             };
             if main { main = false; };
