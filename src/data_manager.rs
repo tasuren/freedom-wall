@@ -289,7 +289,7 @@ impl DataManager {
     }
 
     /// 壁紙の設定を取得します。
-    pub fn get_wallpaper(&self, name: String) -> Option<&Wallpaper> {
+    pub fn get_wallpaper(&self, name: &str) -> Option<&Wallpaper> {
         for wallpaper in self.wallpapers.iter() {
             if wallpaper.name == name {
                 return Some(wallpaper);

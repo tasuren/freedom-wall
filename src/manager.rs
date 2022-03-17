@@ -101,13 +101,13 @@ impl<'window> Manager<'window> {
                         done.push(window.webview.window().id());
                         continue;
                     };
-                    
+    
                     self.add(
-                        self.data.get_wallpaper(target.wallpaper)
+                        self.data.get_wallpaper(&target.wallpaper)
                             .unwrap_or_else(|| {
                                 error(&format!("{}に対応する壁紙が見つかりませんでした。", target.wallpaper));
                                 panic!("Failed find wallpaper");
-                            })
+                            }).clone()
                     );
                     break;
                 };
