@@ -22,16 +22,16 @@ use super::{
 
 
 /// ウィンドウ等を管理するための構造体です。
-pub struct Manager {
-    pub event_loop: EventLoopWindowTarget<()>,
-    pub windows: Vec<Window<'static>>,
+pub struct Manager<'window> {
+    pub event_loop: &'window EventLoop<()>,
+    pub windows: Vec<Window<'window>>,
     pub data: DataManager
 }
 
 
 /// managerの実装です。
-impl Manager {
-    pub fn new(event_loop: EventLoopWindowTarget<()>) -> Option<Self> {
+impl<'window> Manager<'window> {
+    pub fn new(event_loop: &'window EventLoop<()>) -> Option<Self> {
         match DataManager::new() {
             Ok(data) => Some(
                 Self { event_loop: event_loop, windows: Vec::new(), data: data }
@@ -41,7 +41,7 @@ impl Manager {
     }
 
     /// 背景ウィンドウを追加します。
-    pub fn add(&mut self, data: &'static Wallpaper) -> wry::Result<()> {
+    pub fn add(&mut self, data: &'window Wallpaper) -> wry::Result<()> {
         let window = WindowBuilder::new()
             .with_title(format!("FreedomWall - {} Wallpaper Window", data.name))
             .with_decorations(false)
@@ -83,7 +83,7 @@ impl Manager {
 
     /// 背景ウィンドウの処理をします。
     /// 設定されている背景ウィンドウの場所とサイズを対象のアプリに合わせます。
-    pub fn process_windows(&mut self) {
+    pub fn process_windows(&'window mut self) {
         let (titles, rects) = get_windows();
         let mut main = false;
         let mut done = Vec::new();
@@ -101,6 +101,7 @@ impl Manager {
                         done.push(window.webview.window().id());
                         continue;
                     };
+                    
                     self.add(
                         self.data.get_wallpaper(target.wallpaper)
                             .unwrap_or_else(|| {
@@ -108,6 +109,7 @@ impl Manager {
                                 panic!("Failed find wallpaper");
                             })
                     );
+                    break;
                 };
             };
             if main { main = false; };
