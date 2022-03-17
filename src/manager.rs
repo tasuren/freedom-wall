@@ -22,15 +22,15 @@ use super::{
 
 
 /// ウィンドウ等を管理するための構造体です。
-pub struct Manager<'a> {
+pub struct Manager {
     pub event_loop: EventLoopWindowTarget<()>,
-    pub windows: Vec<Window<'a>>,
+    pub windows: Vec<Window<'static>>,
     pub data: DataManager
 }
 
 
 /// managerの実装です。
-impl<'a> Manager<'a> {
+impl Manager {
     pub fn new(event_loop: EventLoopWindowTarget<()>) -> Option<Self> {
         match DataManager::new() {
             Ok(data) => Some(
@@ -41,7 +41,7 @@ impl<'a> Manager<'a> {
     }
 
     /// 背景ウィンドウを追加します。
-    pub fn add(&mut self, data: &'a Wallpaper) -> wry::Result<()> {
+    pub fn add(&mut self, data: &'static Wallpaper) -> wry::Result<()> {
         let window = WindowBuilder::new()
             .with_title(format!("FreedomWall - {} Wallpaper Window", data.name))
             .with_decorations(false)
@@ -83,7 +83,7 @@ impl<'a> Manager<'a> {
 
     /// 背景ウィンドウの処理をします。
     /// 設定されている背景ウィンドウの場所とサイズを対象のアプリに合わせます。
-    pub fn process_windows(&'a mut self) {
+    pub fn process_windows(&mut self) {
         let (titles, rects) = get_windows();
         let mut main = false;
         let mut done = Vec::new();
