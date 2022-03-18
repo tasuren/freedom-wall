@@ -49,6 +49,7 @@ pub struct WallpaperJson {
     pub author: String,
     pub description: String,
     pub setting: HashMap<String, String>,
+    pub forceSize: bool,
     pub dev: bool
 }
 
@@ -66,7 +67,7 @@ pub struct Wallpaper {
 #[derive(Serialize, Deserialize)]
 pub struct Target {
     pub targets: Vec<String>,
-    pub exception: Vec<String>,
+    pub exceptions: Vec<String>,
     pub alpha: f64,
     pub wallpaper: String
 }

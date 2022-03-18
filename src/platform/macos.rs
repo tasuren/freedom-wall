@@ -168,6 +168,7 @@ pub fn get_windows() -> (Vec<String>, Vec<(Vec<f64>, bool)>) {
                 .expect("CFDictionaryからkCGWindowLayerの値の取り出しに失敗しました。")
         ).expect("CFNumberの値の取り出しに失敗しました。");
         if &title == "Dock" && layer != 0 { next_main = true; continue; };
+        if layer != 0 { continue; };
         if &title == "FreedomWall" { continue; };
 
         if title.is_empty() {

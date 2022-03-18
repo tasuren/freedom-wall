@@ -72,7 +72,7 @@ impl Manager {
                 &format!("wry://{}", format!("{}/index.html", &data.path)),
                 &data.detail.setting
             ).expect("クエリパラメータの処理に失敗しました。").to_string())?
-            .with_initialization_script(r#"
+            .with_initialization_script(if data.detail.forceSize { r#"
                 // ウィンドウのサイズに壁紙のサイズを合わせるためのスクリプトを実行する。
                 let resize = function () {
                   for (let element of document.getElementsByClassName("background")) {
@@ -90,8 +90,7 @@ impl Manager {
                         padding: 0;
                         margin: 0;
                       }
-                        body {
-                        background-color: black;
+                      body {
                         overflow: hidden;
                       }
                         #background {
@@ -101,7 +100,7 @@ impl Manager {
                     `;
                     resize();
                 };
-                window.onload = onload;"#)
+                window.onload = onload;"# } else { "" })
             .build()?;
         self.windows.push(Window::new(data, webview, alpha, target));
         Ok(())
@@ -122,27 +121,30 @@ impl Manager {
     pub fn process_windows(&mut self, event_loop: &EventLoopWindowTarget<()>) -> Result<(), String>{
         let (titles, rects) = get_windows();
         let mut done = Vec::new();
+        // DEBUG: println!("{}", self.windows.len());
 
+        // 背景を設定すべきウィンドウを探す。
         for (title, (rect, main)) in titles.iter().zip(rects) {
-            // 背景の対象として設定されているか検索をする。
             let mut make = None;
             for target in self.data.general.wallpapers.iter() {
-                if target.targets.iter().any(|x| title.contains(x)) {
-                    // 背景の対象のウィンドウを検索する。
+                // 背景を設定すべきウィンドウかどうかを調べる。
+                if target.targets.iter().any(|target| title.contains(target))
+                        && target.exceptions.iter().all(|exception| !title.contains(exception)) {
+                    // 既に背景ウィンドウを設定している場合はそのウィンドウの位置と大きさを対象のウィンドウに合わせる。
                     let mut first = true;
                     for window in self.windows.iter_mut() {
-                        println!("{} {} {:?}", title, window.target, window.wallpaper);
                         if window.wallpaper.name == target.wallpaper
-                                && !done.contains(&window.webview.window().id())
                                 && &window.target == title {
                             // もし対象のウィンドウが見つかったのならそのウィンドウに背景ウィンドウを移動させる。
                             window.set_rect_from_vec(&rect);
                             window.set_click_through(main);
                             done.push(window.webview.window().id());
                             first = false;
+                            break;
                         };
                     };
                     if first { make = Some((target.wallpaper.clone(), target.alpha, title)); };
+                    break;
                 };
             };
 
