@@ -10,9 +10,9 @@ use super::data_manager::Wallpaper;
 
 
 /// 背景ウィンドウの状態を変更したりするための構造体のトレイトです。
-pub trait WindowTrait<'a> {
+pub trait WindowTrait {
     /// コンストラクタ
-    fn new(data: &'a Wallpaper, webview: WebView) -> Self;
+    fn new(data: Wallpaper, webview: WebView, alpha: f64, target: String) -> Self;
     /// ウィンドウに透明度を設定します。
     fn set_transparent(&self, alpha: f64);
     /// ウィンドウの位置とサイズを変更します。

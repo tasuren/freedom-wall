@@ -44,19 +44,17 @@ fn add_setting_path(path: &str) -> String {
 
 
 /// 壁紙プロファイルの設定ファイルである`data.json`の構造体です。
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct WallpaperJson {
     pub author: String,
     pub description: String,
-    pub alpha: f32,
-    pub target: Vec<String>,
-    pub exception: Vec<String>,
-    pub setting: HashMap<String, String>
+    pub setting: HashMap<String, String>,
+    pub dev: bool
 }
 
 
 /// 壁紙の設定データの構造体です。
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Wallpaper {
     pub name: String,
     pub path: String,
@@ -69,6 +67,7 @@ pub struct Wallpaper {
 pub struct Target {
     pub targets: Vec<String>,
     pub exception: Vec<String>,
+    pub alpha: f64,
     pub wallpaper: String
 }
 
@@ -118,7 +117,8 @@ fn get_name<'a>(path: &'a PathBuf) -> &'a str {
 
 /// 指定されたパスのフォルダにあるすべてのフォルダkらあファイル検索を行います。
 /// また、on_found引数でファイルの読み込み処理等も行うこともできます。
-fn search_files<F: Fn(&String, &str, &PathBuf, String) -> ()>(
+/// on_foundに渡されるものは左から順にフォルダのパス,フォルダのPathBuf,ファイル名,ファイルのパス
+fn search_files<F: Fn(String, &PathBuf, &str, &String) -> ()>(
     path: &str, targets: Vec<&str>, on_found: F
 ) -> Result<(), String> {
     if let Some(dirs) = get_files(&PathBuf::from(add_setting_path(path)), true) {
@@ -132,15 +132,16 @@ fn search_files<F: Fn(&String, &str, &PathBuf, String) -> ()>(
                     let file_name = get_name(&file);
                     if targets.contains(&file_name) {
                         ok.push(file_name);
-                        let path = format!("{}/{}", path_string, file_name);
+                        let file_path = format!("{}/{}", path_string, file_name);
                         on_found(
-                            &path, file_name, file, path.replace(&format!("/{}", file_name), "")
+                            file_path.replace(&format!("/{}", file_name), ""),
+                            &path, file_name, &file_path
                         );
                     };
                 };
 
                 // もし指定されたファイル等を全て見つけられなかったのならエラーとする。
-                if ok.len() >= targets.len() {
+                if ok.len() < targets.len() {
                     return Err(format!(
                         "{}に`{}`が存在しないため壁紙を読み込めません。",
                         path_string, targets.iter()
@@ -198,17 +199,18 @@ fn read_setting() -> Result<GeneralSetting, String> {
 
 
 /// 壁紙の設定を読み込みます。
-fn read_wallpapers<'a>() -> Result<Wallpapers, String> {
+fn read_wallpapers() -> Result<Wallpapers, String> {
     let error = RefCell::new(String::new());
     let wallpapers = RefCell::new(Vec::new());
     search_files(
-        "wallpapers", vec!["index.html", "data.json"], |path, file_name, _, root| {
+        "wallpapers", vec!["index.html", "data.json"], |path, dir, file_name, file_path| {
             if file_name == "data.json" {
-                if let Ok(raw) = read(path) {
+                if let Ok(raw) = read(&file_path) {
                     if let Ok(data) = from_str::<WallpaperJson>(&raw) {
                         wallpapers.borrow_mut().push(
                             Wallpaper {
-                                name: file_name.to_string(), path: root, detail: data
+                                name: dir.file_name().unwrap().to_str().unwrap().to_string(),
+                                path: path, detail: data
                             }
                         );
                         return;
@@ -239,19 +241,20 @@ impl DataManager {
             for (file_name, default) in vec![
                 ("data.json", DATA_DEFAULT), ("wallpapers", "_dir_"), ("extensions", "_dir_")
             ] {
-                let on_error = |detail| {
-                    error(&format!("{}の作成に失敗しました。\n{}", file_name, detail)); panic!();
-                };
+                let mut error = String::new();
                 let path = add_setting_path(file_name);
                 if !Path::new(&path).exists() {
                     // もし必要なファイルまたはフォルダがまだないのなら新しく作る。
                     if default == "_dir_" {
-                        create_dir(&path).unwrap_or_else(|_| on_error(format!("Path:{}", path)));
+                        create_dir(&path).unwrap_or_else(|_| error = format!("Path:{}", path));
                     } else {
                         write(&path, default.to_string())
-                            .unwrap_or_else(on_error);
+                            .unwrap_or_else(
+                                |detail| error = format!("{}の作成に失敗しました。\n{}", file_name, detail)
+                            );
                     };
                 };
+                if !error.is_empty() { return Err(error); };
             };
         };
         Ok(DataManager { general: read_setting()?, wallpapers: read_wallpapers()? })
@@ -289,10 +292,10 @@ impl DataManager {
     }
 
     /// 壁紙の設定を取得します。
-    pub fn get_wallpaper(&self, name: &str) -> Option<&Wallpaper> {
+    pub fn get_wallpaper(&self, name: &str) -> Option<Wallpaper> {
         for wallpaper in self.wallpapers.iter() {
             if wallpaper.name == name {
-                return Some(wallpaper);
+                return Some(wallpaper.clone());
             };
         };
         None

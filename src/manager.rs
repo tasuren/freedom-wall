@@ -1,13 +1,10 @@
 //! FreedomWall - Manager
 
-use std::{
-    collections::HashMap, rc::Rc,
-    fs::{ canonicalize, read }
-};
+use std::fs::{ canonicalize, read };
 
 use wry::{
     application::{
-        event_loop::{ EventLoop, EventLoopWindowTarget },
+        event_loop::EventLoopWindowTarget,
         window::WindowBuilder
     },
     webview::WebViewBuilder, http::ResponseBuilder
@@ -22,52 +19,91 @@ use super::{
 
 
 /// ウィンドウ等を管理するための構造体です。
-pub struct Manager<'window> {
-    pub event_loop: &'window EventLoop<()>,
-    pub windows: Vec<Window<'window>>,
+pub struct Manager {
+    pub windows: Vec<Window>,
     pub data: DataManager
 }
 
 
 /// managerの実装です。
-impl<'window> Manager<'window> {
-    pub fn new(event_loop: &'window EventLoop<()>) -> Option<Self> {
+impl Manager {
+    pub fn new() -> Option<Self> {
         match DataManager::new() {
             Ok(data) => Some(
-                Self { event_loop: event_loop, windows: Vec::new(), data: data }
+                Self { windows: Vec::new(), data: data }
             ),
             Err(message) => { error(&message); None }
         }
     }
 
     /// 背景ウィンドウを追加します。
-    pub fn add(&mut self, data: &'window Wallpaper) -> wry::Result<()> {
+    pub fn add(
+        &mut self, event_loop: &EventLoopWindowTarget<()>,
+        data: Wallpaper, alpha: f64, target: String
+    ) -> wry::Result<()> {
         let window = WindowBuilder::new()
             .with_title(format!("FreedomWall - {} Wallpaper Window", data.name))
             .with_decorations(false)
-            .build(&self.event_loop)?;
+            .build(event_loop)?;
         let webview = WebViewBuilder::new(window)?
             .with_custom_protocol("wry".into(), |request| {
-                let path = request.uri().replace("wry://", "");
-                let test;
-                ResponseBuilder::new()
-                    .mimetype(
-                        match mime_guess::from_path(&path).first() {
-                            Some(mime) => {
-                                test = format!("{}/{}", mime.type_(), mime.subtype());
-                                &test
-                            },
-                            _ => "text/plain"
-                        }
-                    )
-                    .body(read(canonicalize(&path)?)?)
+                match Url::parse(&request.uri().replace("wry://", "file://")) {
+                    Ok(url) => {
+                        let path = url.to_file_path().unwrap();
+                        let test;
+                        ResponseBuilder::new()
+                            .mimetype(
+                                match mime_guess::from_path(&path).first() {
+                                    Some(mime) => {
+                                        test = format!("{}/{}", mime.type_(), mime.subtype());
+                                        &test
+                                    },
+                                    _ => "text/plain"
+                                }
+                            )
+                            .body(read(canonicalize(path.to_str().unwrap())?)?)
+                    }, _ => ResponseBuilder::new()
+                        .header("Location", "src/NotFound.html")
+                        .status(301)
+                        .body(Vec::new())
+                }
             })
             .with_url(&Url::parse_with_params(
                 &format!("wry://{}", format!("{}/index.html", &data.path)),
                 &data.detail.setting
             ).expect("クエリパラメータの処理に失敗しました。").to_string())?
+            .with_initialization_script(r#"
+                // ウィンドウのサイズに壁紙のサイズを合わせるためのスクリプトを実行する。
+                let resize = function () {
+                  for (let element of document.getElementsByClassName("background")) {
+                    element.style.width = `${window.innerWidth}px`;
+                    element.style.height = `${window.innerHeight}px`;
+                  };
+                };
+                window.resize = resize;
+
+                let onload = function () {
+                    // 画面全体にHTMLが表示されるようにする。
+                    document.getElementsByTagName("head")[0].innerHTML += `
+                    <style type="text/css">
+                      * {
+                        padding: 0;
+                        margin: 0;
+                      }
+                        body {
+                        background-color: black;
+                        overflow: hidden;
+                      }
+                        #background {
+                        object-fit: fill;
+                      }
+                    </style>
+                    `;
+                    resize();
+                };
+                window.onload = onload;"#)
             .build()?;
-        self.windows.push(Window::new(data, webview));
+        self.windows.push(Window::new(data, webview, alpha, target));
         Ok(())
     }
 
@@ -83,37 +119,55 @@ impl<'window> Manager<'window> {
 
     /// 背景ウィンドウの処理をします。
     /// 設定されている背景ウィンドウの場所とサイズを対象のアプリに合わせます。
-    pub fn process_windows(&'window mut self) {
+    pub fn process_windows(&mut self, event_loop: &EventLoopWindowTarget<()>) -> Result<(), String>{
         let (titles, rects) = get_windows();
-        let mut main = false;
         let mut done = Vec::new();
-        for (title, (rect, layer)) in titles.iter().zip(rects) {
-            if title == "Dock" && layer != 0 { main = true; continue; };
+
+        for (title, (rect, main)) in titles.iter().zip(rects) {
             // 背景の対象として設定されているか検索をする。
+            let mut make = None;
             for target in self.data.general.wallpapers.iter() {
                 if target.targets.iter().any(|x| title.contains(x)) {
                     // 背景の対象のウィンドウを検索する。
-                    for window in self.windows.iter_mut()
-                            .filter(|x| x.wallpaper.name == target.wallpaper) {
-                        // もし対象のウィンドウが見つかったのならそのウィンドウに背景ウィンドウを移動させる。
-                        window.set_rect_from_vec(&rect);
-                        window.set_click_through(if main { true } else { false });
-                        done.push(window.webview.window().id());
-                        continue;
+                    let mut first = true;
+                    for window in self.windows.iter_mut() {
+                        println!("{} {} {:?}", title, window.target, window.wallpaper);
+                        if window.wallpaper.name == target.wallpaper
+                                && !done.contains(&window.webview.window().id())
+                                && &window.target == title {
+                            // もし対象のウィンドウが見つかったのならそのウィンドウに背景ウィンドウを移動させる。
+                            window.set_rect_from_vec(&rect);
+                            window.set_click_through(main);
+                            done.push(window.webview.window().id());
+                            first = false;
+                        };
                     };
-    
-                    self.add(
-                        self.data.get_wallpaper(&target.wallpaper)
-                            .unwrap_or_else(|| {
-                                error(&format!("{}に対応する壁紙が見つかりませんでした。", target.wallpaper));
-                                panic!("Failed find wallpaper");
-                            }).clone()
-                    );
-                    break;
+                    if first { make = Some((target.wallpaper.clone(), target.alpha, title)); };
                 };
             };
-            if main { main = false; };
+
+            if let Some(target) = make {
+                // もしまだ作っていない背景ウィンドウなら作る。
+                return if let Some(wallpaper) = self.data.get_wallpaper(&target.0) {
+                    let _ = self.add(
+                        event_loop, wallpaper.clone(), target.1, target.2.clone()
+                    );
+                    Ok(())
+                } else {
+                    Err(format!("{}に対応する壁紙が見つかりませんでした。", target.0))
+                }
+            };
         };
 
+        // もし既に存在していないアプリへの背景ウィンドウがあるなら必要ないので消す。
+        if done.len() < self.windows.len() {
+            for index in 0..self.windows.len() {
+                if !done.contains(&self.windows[index].webview.window().id()) {
+                    self.windows.remove(index);
+                };
+            };
+        };
+
+        Ok(())
     }
 }

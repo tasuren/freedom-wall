@@ -16,7 +16,7 @@ use wry::{
 
 use objc::{
     msg_send, sel, sel_impl,
-    runtime::{ Object, YES, NO }
+    runtime::{ Object, YES }
 };
 
 use core_graphics::display::{
@@ -36,15 +36,17 @@ use core_foundation::{
     },
     base::CFIndex
 };
+use cocoa::appkit::NSWindowCollectionBehavior;
 
 use super::super::{ data_manager::Wallpaper, window::WindowTrait };
 
 
-pub struct Window<'a> {
+pub struct Window {
     pub webview: WebView,
     pub ns_window: *const Object,
     pub now_click_through: bool,
-    pub wallpaper: &'a Wallpaper
+    pub wallpaper: Wallpaper,
+    pub target: String
 }
 
 
@@ -142,9 +144,9 @@ pub fn get_front(windows_name: Vec<String>, windows_rect: Vec<(Vec<f64>, isize)>
 
 
 /// 渡された文字列が名前に含まれるウィンドウのサイズを取得します。
-pub fn get_windows() -> (Vec<String>, Vec<(Vec<f64>, isize)>) {
-    let mut windows_name: Vec<String> = Vec::new();
-    let mut windows_rect: Vec<(Vec<f64>, isize)> = Vec::new();
+pub fn get_windows() -> (Vec<String>, Vec<(Vec<f64>, bool)>) {
+    let mut windows_name = Vec::new();
+    let mut windows_rect: Vec<(Vec<f64>, bool)> = Vec::new();
 
     let windows = unsafe {
         CGWindowListCopyWindowInfo(
@@ -152,6 +154,7 @@ pub fn get_windows() -> (Vec<String>, Vec<(Vec<f64>, isize)>) {
             kCGNullWindowID
         )
     };
+    let mut next_main = false;
     for index in 0..unsafe { CFArrayGetCount(windows) } {
         let data = unsafe { CFArrayGetValueAtIndex(windows, index) as CFDictionaryRef };
 
@@ -160,8 +163,16 @@ pub fn get_windows() -> (Vec<String>, Vec<(Vec<f64>, isize)>) {
                 data, "kCGWindowOwnerName"
             ) { Some(value) => value as CFStringRef, _ => continue }
         );
+        let layer = get_cfnumber(
+            get_cfdictionary_value_from_str(data, "kCGWindowLayer")
+                .expect("CFDictionaryからkCGWindowLayerの値の取り出しに失敗しました。")
+        ).expect("CFNumberの値の取り出しに失敗しました。");
+        if &title == "Dock" && layer != 0 { next_main = true; continue; };
+        if &title == "FreedomWall" { continue; };
 
-        if !title.is_empty() {
+        if title.is_empty() {
+            if next_main { next_main = false; };
+        } else {
             if index == 0 { continue; };
             let before_index = if windows_name.is_empty() { 0 } else { windows_name.len() - 1 };
             let same_before = !windows_name.is_empty() && windows_name[before_index] == title;
@@ -189,13 +200,9 @@ pub fn get_windows() -> (Vec<String>, Vec<(Vec<f64>, isize)>) {
 
             if update {
                 if same_before { windows_name.pop(); windows_rect.pop(); };
+                windows_rect.push((tentative, next_main));
                 windows_name.push(title);
-                windows_rect.push((
-                    tentative, get_cfnumber(
-                        get_cfdictionary_value_from_str(data, "kCGWindowLayer")
-                            .expect("CFDictionaryからkCGWindowLayerの値の取り出しに失敗しました。")
-                    ).expect("CFNumberの値の取り出しに失敗しました。")
-                ));
+                if next_main { next_main = false; };
             };
         };
     };
@@ -203,15 +210,21 @@ pub fn get_windows() -> (Vec<String>, Vec<(Vec<f64>, isize)>) {
 }
 
 
-impl<'a> WindowTrait<'a> for Window<'a> {
-    fn new(wallpaper: &'a Wallpaper, webview: WebView) -> Self {
+impl WindowTrait for Window {
+    fn new(wallpaper: Wallpaper, webview: WebView, alpha: f64, target: String) -> Self {
         let ns_window = webview.window().ns_window() as *const Object;
         let mut window = Self {
-            webview: webview, ns_window: ns_window,
-            now_click_through: false, wallpaper: wallpaper
+            webview: webview, ns_window: ns_window, now_click_through: false,
+            wallpaper: wallpaper, target: target
         };
-        window.set_transparent(0.2);
+        window.set_transparent(alpha);
         window.toggle_click_through();
+        unsafe {
+            // クリック等のイベントがウィンドウに来ないようにする。
+            let _: () = msg_send![
+                window.ns_window, setIgnoresMouseEvents: YES
+            ];
+        }
         window
     }
 
@@ -241,12 +254,9 @@ impl<'a> WindowTrait<'a> for Window<'a> {
     fn toggle_click_through(&mut self) {
         self.now_click_through = !self.now_click_through;
         unsafe {
-            // クリックイベントがウィンドウに来ないようにする。
-            let _: () = msg_send![
-                self.ns_window,
-                setIgnoresMouseEvents: if self.now_click_through { YES } else { NO }
-            ];
-            // ウィンドウレベルをオーバーレイに設定する。
+            // ウィンドウレベルの設定をする。
+            // 4はノーマルの普通で15の場合はオーバーレイでクリックが貫通する。
+            //println!("{}", self.now_click_through);
             let _: () = msg_send![
                 self.ns_window, setLevel: if self.now_click_through { 15 } else { 4 }
             ];
