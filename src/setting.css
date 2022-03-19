@@ -1,0 +1,25 @@
+/* setting.css */
+
+
+body {
+  padding: 0; margin: 0;
+	font-family: Consolas,monaco,monospace;
+}
+
+
+.container {
+  display: -webkit-flex;
+  display: flex;
+  word-break: break-all;
+}
+
+.menu {
+  width: 30%;
+  padding: 3%;
+  background-color: #e9eef3;
+}
+
+.content {
+  width: 70%;
+  padding: 1% 3%;
+}

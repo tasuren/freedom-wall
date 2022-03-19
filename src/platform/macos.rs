@@ -16,7 +16,7 @@ use wry::{
 
 use objc::{
     msg_send, sel, sel_impl,
-    runtime::{ Object, YES }
+    runtime::{ Object, YES, NO }
 };
 
 use core_graphics::display::{
@@ -36,7 +36,6 @@ use core_foundation::{
     },
     base::CFIndex
 };
-use cocoa::appkit::NSWindowCollectionBehavior;
 
 use super::super::{ data_manager::Wallpaper, window::WindowTrait };
 
@@ -44,7 +43,6 @@ use super::super::{ data_manager::Wallpaper, window::WindowTrait };
 pub struct Window {
     pub webview: WebView,
     pub ns_window: *const Object,
-    pub now_click_through: bool,
     pub wallpaper: Wallpaper,
     pub target: String
 }
@@ -168,7 +166,7 @@ pub fn get_windows() -> (Vec<String>, Vec<(Vec<f64>, bool)>) {
                 .expect("CFDictionaryからkCGWindowLayerの値の取り出しに失敗しました。")
         ).expect("CFNumberの値の取り出しに失敗しました。");
         if &title == "Dock" && layer != 0 { next_main = true; continue; };
-        if layer != 0 { continue; };
+        if layer != 0 { continue; }; // 一般の人がウィンドウだと思うウィンドウ以外は除外する。(タスクトレイアイコン等)
         if &title == "FreedomWall" { continue; };
 
         if title.is_empty() {
@@ -215,11 +213,11 @@ impl WindowTrait for Window {
     fn new(wallpaper: Wallpaper, webview: WebView, alpha: f64, target: String) -> Self {
         let ns_window = webview.window().ns_window() as *const Object;
         let mut window = Self {
-            webview: webview, ns_window: ns_window, now_click_through: false,
+            webview: webview, ns_window: ns_window,
             wallpaper: wallpaper, target: target
         };
         window.set_transparent(alpha);
-        window.toggle_click_through();
+        window.set_click_through(true);
         unsafe {
             // クリック等のイベントがウィンドウに来ないようにする。
             let _: () = msg_send![
@@ -252,21 +250,17 @@ impl WindowTrait for Window {
         self.set_rect(rect[2], rect[3], rect[1], rect[0]);
     }
 
-    fn toggle_click_through(&mut self) {
-        self.now_click_through = !self.now_click_through;
+    fn on_front(&mut self) {
         unsafe {
-            // ウィンドウレベルの設定をする。
-            // 4はノーマルの普通で15の場合はオーバーレイでクリックが貫通する。
-            //println!("{}", self.now_click_through);
-            let _: () = msg_send![
-                self.ns_window, setLevel: if self.now_click_through { 15 } else { 4 }
-            ];
+            let _: () = msg_send![self.ns_window, orderFrontRegardless];
         };
     }
 
     fn set_click_through(&mut self, toggle: bool) {
-        if toggle != self.now_click_through  {
-            self.toggle_click_through();
+        unsafe {
+            let _: () = msg_send![
+                self.ns_window, setIgnoresMouseEvents: if toggle { YES } else { NO }
+            ];
         };
     }
 }

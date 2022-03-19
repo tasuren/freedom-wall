@@ -1,109 +1,131 @@
 //! FreedomWall - Manager
 
-use std::fs::{ canonicalize, read };
+use std::{ path::PathBuf, fs::{ canonicalize, read } };
 
 use wry::{
     application::{
         event_loop::EventLoopWindowTarget,
         window::WindowBuilder
     },
-    webview::WebViewBuilder, http::ResponseBuilder
+    webview::{ WebViewBuilder, WebView }, http::{ Request, ResponseBuilder, Response },
+    Error
 };
 use url::Url;
+use rust_i18n::{ t, set_locale };
 
 use super::{
     window::{ Window, WindowTrait },
     data_manager::{ DataManager, Wallpaper },
-    platform::get_windows, utils::error
+    platform::get_windows, APPLICATION_NAME
 };
 
 
 /// ウィンドウ等を管理するための構造体です。
 pub struct Manager {
     pub windows: Vec<Window>,
-    pub data: DataManager
+    pub data: DataManager,
+    pub setting: WebView
 }
 
 
-/// managerの実装です。
+/// リクエストを処理します。
+fn request_handler(request: &Request) -> Result<Response, Error> {
+    if let Ok(url) = Url::parse(&request.uri()) {
+        if let Ok(path) = if request.uri().starts_with("wry://") {
+            Ok(PathBuf::from(format!("./{}", request.uri().replace("wry://", ""))))
+        } else { url.to_file_path() } {
+            let test;
+            return ResponseBuilder::new()
+                .mimetype(
+                    match mime_guess::from_path(&path).first() {
+                        Some(mime) => {
+                            test = format!("{}/{}", mime.type_(), mime.subtype());
+                            &test
+                        },
+                        _ => "text/plain"
+                    }
+                )
+                .body(read(canonicalize(path.to_str().unwrap())?)?);
+        };
+    };
+    ResponseBuilder::new()
+        .header("Location", "src/NotFound.html")
+        .status(301)
+        .body(Vec::new())
+}
+
+
+/// Managerの実装です。
 impl Manager {
-    pub fn new() -> Option<Self> {
-        match DataManager::new() {
-            Ok(data) => Some(
-                Self { windows: Vec::new(), data: data }
-            ),
-            Err(message) => { error(&message); None }
-        }
+    pub fn new(event_loop: &EventLoopWindowTarget<()>) -> Result<Self, String> {
+        let data = DataManager::new()?;
+        // 言語設定を適用させる。
+        set_locale(&data.general.language);
+        // 設定ウィンドウを作る。
+        let window = WindowBuilder::new()
+            .with_title(format!("{} Setting", APPLICATION_NAME))
+            .build(event_loop).expect("Failed to build the setting window.");
+        window.set_visible(true);
+        Ok(Self {
+            windows: Vec::new(), data: data, setting: WebViewBuilder::new(window).unwrap()
+                .with_custom_protocol("wry".into(), request_handler)
+                .with_url("wry://src/setting.html").unwrap()
+                .build().expect("Failed to build the setting webview.")
+        })
     }
 
     /// 背景ウィンドウを追加します。
     pub fn add(
         &mut self, event_loop: &EventLoopWindowTarget<()>,
         data: Wallpaper, alpha: f64, target: String
-    ) -> wry::Result<()> {
+    ) -> Result<(), String> {
         let window = WindowBuilder::new()
-            .with_title(format!("FreedomWall - {} Wallpaper Window", data.name))
+            .with_title(format!("{} - {} Wallpaper Window", APPLICATION_NAME, data.name))
             .with_decorations(false)
-            .build(event_loop)?;
-        let webview = WebViewBuilder::new(window)?
-            .with_custom_protocol("wry".into(), |request| {
-                match Url::parse(&request.uri().replace("wry://", "file://")) {
-                    Ok(url) => {
-                        let path = url.to_file_path().unwrap();
-                        let test;
-                        ResponseBuilder::new()
-                            .mimetype(
-                                match mime_guess::from_path(&path).first() {
-                                    Some(mime) => {
-                                        test = format!("{}/{}", mime.type_(), mime.subtype());
-                                        &test
-                                    },
-                                    _ => "text/plain"
-                                }
-                            )
-                            .body(read(canonicalize(path.to_str().unwrap())?)?)
-                    }, _ => ResponseBuilder::new()
-                        .header("Location", "src/NotFound.html")
-                        .status(301)
-                        .body(Vec::new())
-                }
-            })
-            .with_url(&Url::parse_with_params(
-                &format!("wry://{}", format!("{}/index.html", &data.path)),
-                &data.detail.setting
-            ).expect("クエリパラメータの処理に失敗しました。").to_string())?
-            .with_initialization_script(if data.detail.forceSize { r#"
-                // ウィンドウのサイズに壁紙のサイズを合わせるためのスクリプトを実行する。
-                let resize = function () {
-                  for (let element of document.getElementsByClassName("background")) {
-                    element.style.width = `${window.innerWidth}px`;
-                    element.style.height = `${window.innerHeight}px`;
-                  };
-                };
-                window.resize = resize;
-
-                let onload = function () {
-                    // 画面全体にHTMLが表示されるようにする。
-                    document.getElementsByTagName("head")[0].innerHTML += `
-                    <style type="text/css">
-                      * {
-                        padding: 0;
-                        margin: 0;
-                      }
-                      body {
-                        overflow: hidden;
-                      }
-                        #background {
-                        object-fit: fill;
-                      }
-                    </style>
-                    `;
-                    resize();
-                };
-                window.onload = onload;"# } else { "" })
-            .build()?;
-        self.windows.push(Window::new(data, webview, alpha, target));
-        Ok(())
+            .build(event_loop).expect("Failed to build the window.");
+        match &Url::parse_with_params(
+            &format!("wry://{}", format!("{}/index.html", &data.path)),
+            &data.detail.setting
+        ) {
+            Ok(url) => {
+                let webview = WebViewBuilder::new(window).unwrap()
+                    .with_custom_protocol("wry".into(), request_handler)
+                    .with_url(&url.to_string()).unwrap()
+                    .with_initialization_script(if data.detail.forceSize { r#"
+                        // ウィンドウのサイズに壁紙のサイズを合わせるためのスクリプトを実行する。
+                        let resize = function () {
+                        for (let element of document.getElementsByClassName("background")) {
+                            element.style.width = `${window.innerWidth}px`;
+                            element.style.height = `${window.innerHeight}px`;
+                        };
+                        };
+                        window.resize = resize;
+        
+                        let onload = function () {
+                            // 画面全体にHTMLが表示されるようにする。
+                            document.getElementsByTagName("head")[0].innerHTML += `
+                            <style type="text/css">
+                            * {
+                                padding: 0;
+                                margin: 0;
+                            }
+                            body {
+                                overflow: hidden;
+                            }
+                                #background {
+                                object-fit: fill;
+                            }
+                            </style>
+                            `;
+                            resize();
+                        };
+                        window.onload = onload;"# } else { "" })
+                    .with_dev_tool(self.data.general.dev)
+                    .build().expect("Failed to build the webview.");
+                self.windows.push(Window::new(data, webview, alpha, target));
+                Ok(())
+            }, _ => Err(t!("core.general.processQueryParameterFailed"))
+        }
     }
 
     /// 指定された背景ウィンドウを削除します。
@@ -137,7 +159,7 @@ impl Manager {
                                 && &window.target == title {
                             // もし対象のウィンドウが見つかったのならそのウィンドウに背景ウィンドウを移動させる。
                             window.set_rect_from_vec(&rect);
-                            window.set_click_through(main);
+                            if main { window.on_front(); };
                             done.push(window.webview.window().id());
                             first = false;
                             break;
@@ -156,7 +178,7 @@ impl Manager {
                     );
                     Ok(())
                 } else {
-                    Err(format!("{}に対応する壁紙が見つかりませんでした。", target.0))
+                    Err(t!("core.general.findAppropriateWallpaperFailed", name=&target.0))
                 }
             };
         };

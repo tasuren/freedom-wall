@@ -20,11 +20,3 @@ pub fn dialog(message: &str, message_type: MessageType) {
 pub fn error(message: &str) {
     dialog(message, MessageType::Error);
 }
-
-
-/// 渡されたResultがエラーの場合はエラーダイアログを表示します。
-pub fn handle_error<T>(e: Result<T, String>) {
-    if let Err(message) = e {
-        error(&message);
-    };
-}
