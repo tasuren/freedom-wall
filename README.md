@@ -1,3 +1,4 @@
+![GitHub all releases](https://img.shields.io/github/downloads/tasuren/FreedomWall/total) ![GitHub release (latest by date)](https://img.shields.io/github/v/release/tasuren/FreedomWall) [![Discord](https://img.shields.io/discord/777430548951728149?label=chat&logo=discord)](https://discord.gg/kfMwZUyGFG) [![Buy Me a Coffee](https://img.shields.io/badge/-tasuren-E9EEF3?label=Buy%20Me%20a%20Coffee&logo=buymeacoffee)](https://www.buymeacoffee.com/tasuren)
 # FreedomWall (under development now)
 This application allows you to add wallpaper to any application.  
 As for Discord of chat app, you can add wallpaper without violating the Terms of Service.
@@ -19,6 +20,9 @@ It also uses WebView to depict the wallpaper so that websites can be displayed.
 ## Screenshots
 Coming soon...
 
+## Installation
+Coming soon...
+
 ## Build
-We need Rust's Cargo, so let's prepare that first.  
+It needs Rust's Cargo, so let's prepare that first.  
 Once you have it ready, simply run `cargo build --release` at the top of this repository directory.
