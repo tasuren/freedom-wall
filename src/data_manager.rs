@@ -2,7 +2,7 @@
 
 use std::{
     collections::HashMap, env::args, path::{ Path, PathBuf },
-    ffi::OsStr, fs::{ File, read_to_string, create_dir },
+    ffi::OsStr, fs::{ File, read_to_string, create_dir, copy, remove_dir },
     io::Write, cell::RefCell
 };
 
@@ -16,7 +16,7 @@ use super::APPLICATION_NAME;
 
 const FAILED_JSON: &str = "JSON生成時にエラーが発生しました。";
 const DATA_DEFAULT: &str = r#"{
-    "language": "ja", "wallpapers": [], "updateInterval": 0.1
+    "language": "ja", "wallpapers": [], "updateInterval": 0.1, "dev": false
 }"#;
 
 
@@ -89,9 +89,11 @@ pub struct GeneralSetting {
 
 /// セーブデータを管理するための構造体です。
 type Wallpapers = Vec<Wallpaper>;
+type Templates = Vec<String>;
 pub struct DataManager {
     pub general: GeneralSetting,
-    pub wallpapers: Wallpapers
+    pub wallpapers: Wallpapers,
+    pub templates: Templates
 }
 
 
@@ -234,6 +236,19 @@ fn read_wallpapers() -> Result<Wallpapers, String> {
 }
 
 
+/// テンプレートを読み込みます。
+fn read_templates() -> Result<Templates, String> {
+    search_files("templates", vec!["index.html", "data.json"], |_,_,_,_| {})?;
+    if let Some(data) = get_files(&PathBuf::from("templates"), true) {
+        let mut result = Vec::new();
+        for path in data {
+            result.push(get_name(&path).to_string());
+        };
+        Ok(result)
+    } else { Err(t!("core.setting.failedRead", path="templates")) }
+}
+
+
 /// DataManagerの実装です。
 /// もしデータが存在しない場合は壁紙プロファイルと拡張機能以外なら新規作成をします。
 impl DataManager {
@@ -263,7 +278,16 @@ impl DataManager {
                 if !error.is_empty() { return Err(error); };
             };
         };
-        Ok(DataManager { general: read_setting()?, wallpapers: read_wallpapers()? })
+        Ok(DataManager {
+            general: read_setting()?, wallpapers: read_wallpapers()?,
+            templates: read_templates()?
+        })
+    }
+
+    /// テンプレート情報を取得します。
+    pub fn read_templates(&mut self) -> Result<&Templates, String> {
+        self.templates = read_templates()?;
+        Ok(&self.templates)
     }
 
     /// 設定を読み込みます。
@@ -286,15 +310,61 @@ impl DataManager {
         Ok(&self.wallpapers)
     }
 
-    /// 壁紙の設定を更新します。
-    pub fn write_wallpaper(&self, index: usize) -> Result<(), String> {
+    /// インデックス番号から壁紙プロファイルを取得します。
+    pub fn get_wallpaper_by_index(&self, index: usize) -> Result<&Wallpaper, String> {
         match self.wallpapers.get(index) {
-            Some(wallpaper) => write(
-                &format!("{}/data.json", wallpaper.path), to_string_pretty(&wallpaper.detail)
-                    .expect(FAILED_JSON)
-            ),
+            Some(wallpaper) => Ok(wallpaper),
             _ => Err(t!("core.general.searchWallpaperFailed"))
         }
+    }
+
+    /// 壁紙プロファイルの設定を更新します。
+    pub fn write_wallpaper(&self, index: usize) -> Result<(), String> {
+        let wallpaper = self.get_wallpaper_by_index(index)?;
+        write(
+            &format!("{}/data.json", wallpaper.path), to_string_pretty(&wallpaper.detail)
+                .expect(FAILED_JSON)
+        );
+        Ok(())
+    }
+
+    /// 壁紙プロファイルを削除します。
+    pub fn remove_wallpaper(&self, index: usize) -> Result<(), String> {
+        let wallpaper = self.get_wallpaper_by_index(index)?;
+        match remove_dir(wallpaper.path.clone()) {
+            Ok(_) => Ok(()), _ => Err(t!("core.setting.removeDirFailed"))
+        }
+    }
+
+    /// 壁紙プロファイルを追加します。
+    pub fn add_wallpaper(
+        &mut self, template: String, name: String, data: WallpaperJson
+    ) -> Result<(), String> {
+        if self.templates.contains(&template) {
+            if self.get_wallpaper(&name).is_none() {
+                let path = add_setting_path(&format!("wallpapers/{}", name))?;
+                // フォルダの作る。
+                match create_dir(&path) {
+                    Ok(_) => {
+                        let original_path = add_setting_path(&format!("templates/{}", template))?;
+                        // ファイルのコピーを行う。
+                        for filename in vec!["index.html", "data.json"] {
+                            if let Err(_) = copy(
+                                format!("{}/{}", original_path, filename),
+                                format!("{}/{}", path, filename)
+                            ) {
+                                return Err(t!("core.setting.copyFailed", path=&name));
+                            };
+                        };
+                        self.wallpapers.push(Wallpaper {
+                            name: name, path: path, detail: data
+                        });
+                        Ok(())
+                    },
+                    _ => Err(t!("core.setting.mkdirFailed", path=&path))
+                }
+            } else { Err(t!("core.setting.alreadyAdded", name=&name)) }
+        } else { Err(t!("core.setting.failedRead", path=&template)) }
     }
 
     /// 壁紙の設定を取得します。
