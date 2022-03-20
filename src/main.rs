@@ -17,7 +17,7 @@ mod data_manager;
 mod manager;
 mod utils;
 
-use manager::Manager;
+use manager::{ UserEvents, Manager };
 use utils::error;
 
 
@@ -27,8 +27,8 @@ pub const APPLICATION_NAME: &str = "FreedomWall";
 
 
 fn main() {
-    let event_loop = EventLoop::new();
-    let manager_option = Manager::new(&event_loop);
+    let event_loop: EventLoop<UserEvents> = EventLoop::with_user_event();
+    let manager_option = Manager::new(&event_loop, event_loop.create_proxy());
     if let Err(message) = manager_option {
         let text = t!(&message);
         error(&text);
@@ -44,10 +44,18 @@ fn main() {
                 },
                 Event::NewEvents(StartCause::ResumeTimeReached { .. }) => {
                     *control_flow = ControlFlow::WaitUntil(Instant::now() + update_interval);
+                    // 背景ウィンドウの場所を調整したりする。
                     if let Err(message) = manager.process_windows(&event_loop_target) {
                         println!("Error while process_windows: {}", message);
                         *control_flow = ControlFlow::Exit;
                     };
+                },
+                Event::UserEvent(UserEvents::Request(request)) => {
+                    let response = manager.on_request(&request.uri, request.body.clone());
+                    let mut queues = manager.queues.borrow_mut();
+                    queues.push(response);
+                    // もしQueueが余っているのならメモリリークを防止するために消す。
+                    if !queues.is_empty() { for i in 0..queues.len() { queues.remove(i); }; };
                 },
                 Event::WindowEvent {
                     event: WindowEvent::CloseRequested, ..

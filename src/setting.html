@@ -8,6 +8,14 @@
   <meta name="author" content="tasuren">
   <link rel="stylesheet" href="setting.css">
 <body>
+  <script>
+    window.onload = function() {
+      document.getElementById("test").innerText = "a";
+      fetch(new Request("wry://api/setting/language/get"))
+        .then(response => response.body())
+        .then(text => { document.getElementById("test").innerText = text; });
+    };
+  </script>
   <div class="container">
     <div class="menu">
       <h1>FreedomWall</h1>
@@ -16,6 +24,7 @@
       <div id="home">
         <h1>FreedomWall Setting</h1>
         ここではFreedomWallの設定をすることができます。
+        <div id="test"></div>
       </div>
     </div>
   </div>

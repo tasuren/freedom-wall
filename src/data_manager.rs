@@ -260,7 +260,7 @@ fn read_wallpapers() -> Result<Wallpapers, String> {
 /// テンプレートを読み込みます。
 fn read_templates() -> Result<Templates, String> {
     search_files("templates", vec!["index.html", "data.json"], |_,_,_,_| {})?;
-    if let Some(data) = get_files(&PathBuf::from("templates"), true) {
+    if let Some(data) = get_files(&PathBuf::from(add_setting_path("templates")?), true) {
         let mut result = Vec::new();
         for path in data {
             result.push(get_name(&path).to_string());
@@ -275,7 +275,7 @@ fn read_extensions() -> Result<Extensions, String> {
     let error = RefCell::new(String::new());
     let extensions = RefCell::new(Vec::new());
     search_files(
-        "wallpapers", vec!["init.js", "data.json"], |path, dir, file_name, file_path| {
+        "extensions", vec!["init.js", "data.json"], |path, dir, file_name, file_path| {
             if file_name == "data.json" {
                 if let Ok(raw) = read(&file_path) {
                     if let Ok(data) = from_str::<ExtensionJson>(&raw) {
