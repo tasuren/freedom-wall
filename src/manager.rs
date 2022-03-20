@@ -191,7 +191,6 @@ impl Manager {
         let window = WindowBuilder::new()
             .with_title(format!("{} Setting", APPLICATION_NAME))
             .build(event_loop).expect("Failed to build the setting window.");
-        window.set_visible(true);
         WebViewBuilder::new(window).unwrap()
             .with_custom_protocol("wry".into(), |request| self.on_request(request))
             .with_url("wry://src/setting.html").unwrap()
@@ -199,8 +198,8 @@ impl Manager {
     }
 
     /// 背景ウィンドウを追加します。
-    pub fn add(
-        &mut self, event_loop: &EventLoopWindowTarget<()>,
+    pub fn add<'a>(
+        &'a mut self, event_loop: &EventLoopWindowTarget<()>,
         data: Wallpaper, alpha: f64, target: String
     ) -> Result<(), String> {
         let window = WindowBuilder::new()

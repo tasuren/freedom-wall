@@ -87,13 +87,34 @@ pub struct GeneralSetting {
 }
 
 
+/// 拡張機能のJSONデータの構造体です。
+#[derive(Serialize, Deserialize, Clone)]
+pub struct ExtensionJson {
+    pub description: String,
+    pub author: String,
+    pub version: String,
+    pub setting: HashMap<String, String>,
+    pub data: String
+}
+
+
+#[derive(Serialize, Deserialize, Clone)]
+pub struct Extension {
+    pub name: String,
+    pub path: String,
+    pub detail: ExtensionJson
+}
+
+
 /// セーブデータを管理するための構造体です。
 type Wallpapers = Vec<Wallpaper>;
 type Templates = Vec<String>;
+type Extensions = Vec<Extension>;
 pub struct DataManager {
     pub general: GeneralSetting,
     pub wallpapers: Wallpapers,
-    pub templates: Templates
+    pub templates: Templates,
+    pub extensions: Extensions
 }
 
 
@@ -220,7 +241,7 @@ fn read_wallpapers() -> Result<Wallpapers, String> {
                     if let Ok(data) = from_str::<WallpaperJson>(&raw) {
                         wallpapers.borrow_mut().push(
                             Wallpaper {
-                                name: dir.file_name().unwrap().to_str().unwrap().to_string(),
+                                name: get_name(dir).to_string(),
                                 path: path, detail: data
                             }
                         );
@@ -246,6 +267,31 @@ fn read_templates() -> Result<Templates, String> {
         };
         Ok(result)
     } else { Err(t!("core.setting.failedRead", path="templates")) }
+}
+
+
+/// 拡張機能を読み込みます。
+fn read_extensions() -> Result<Extensions, String> {
+    let error = RefCell::new(String::new());
+    let extensions = RefCell::new(Vec::new());
+    search_files(
+        "wallpapers", vec!["init.js", "data.json"], |path, dir, file_name, file_path| {
+            if file_name == "data.json" {
+                if let Ok(raw) = read(&file_path) {
+                    if let Ok(data) = from_str::<ExtensionJson>(&raw) {
+                        extensions.borrow_mut().push(Extension {
+                            name: get_name(dir).to_string(),
+                            path: path, detail: data
+                        });
+                        return;
+                    };
+                };
+                *error.borrow_mut() = failed_read(path);
+            };
+        }
+    )?;
+    if !error.borrow().is_empty() { return Err(error.into_inner()) };
+    Ok(extensions.into_inner())
 }
 
 
@@ -280,7 +326,7 @@ impl DataManager {
         };
         Ok(DataManager {
             general: read_setting()?, wallpapers: read_wallpapers()?,
-            templates: read_templates()?
+            templates: read_templates()?, extensions: read_extensions()?
         })
     }
 
@@ -308,6 +354,34 @@ impl DataManager {
     pub fn read_wallpapers(&mut self) -> Result<&Wallpapers, String> {
         self.wallpapers = read_wallpapers()?;
         Ok(&self.wallpapers)
+    }
+
+    /// 拡張機能を読み込みます。
+    pub fn read_extensions(&mut self) -> Result<&Extensions, String> {
+        self.extensions = read_extensions()?;
+        Ok(&self.extensions)
+    }
+
+    /// 拡張機能のデータを読み込みます。
+    pub fn get_extensions(&self, name: &str) -> Option<&Extension> {
+        for extension in self.extensions.iter() {
+            if &extension.name == name {
+                return Some(extension);
+            };
+        };
+        None
+    }
+
+    /// 拡張機能の設定を書き込みます。
+    pub fn write_extension(&self, name: String) -> Result<(), String> {
+        if let Some(extension) = self.get_extensions(&name) {
+            write(
+                &format!("{}/data.json", extension.path),
+                to_string_pretty(&extension.detail)
+                    .expect(FAILED_JSON)
+            );
+            Ok(())
+        } else { Err(t!("core.setting.readFailed", path=&name)) }
     }
 
     /// インデックス番号から壁紙プロファイルを取得します。
