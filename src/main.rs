@@ -51,11 +51,12 @@ fn main() {
                     };
                 },
                 Event::UserEvent(UserEvents::Request(request)) => {
+                    // APIリクエストを処理する。ここでやらなければエラーが起きてしまう。理由は`manager.rs`にて記述済み。
                     let response = manager.on_request(&request.uri, request.body.clone());
                     let mut queues = manager.queues.borrow_mut();
+
+                    // リクエストの結果の返信をキューに追加する。
                     queues.push(response);
-                    // もしQueueが余っているのならメモリリークを防止するために消す。
-                    if !queues.is_empty() { for i in 0..queues.len() { queues.remove(i); }; };
                 },
                 Event::WindowEvent {
                     event: WindowEvent::CloseRequested, ..

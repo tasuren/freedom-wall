@@ -2,7 +2,7 @@
 
 use std::{
     path::PathBuf, fs::{ canonicalize, read },
-    collections::HashMap, rc::Rc, cell::{ Ref, RefCell }
+    collections::HashMap, rc::Rc, cell::{ RefCell, RefMut }
 };
 
 use wry::{
@@ -53,10 +53,10 @@ pub struct RequestData {
 pub enum UserEvents { Request(RequestData) }
 
 
-/// リクエストから適切なファイルを探し出しそれを返します。します。
+/// リクエストから適切なファイルを探し出しそれを返します。
 fn request2response(uri: &str) -> Result<Response, Error> {
     if let Ok(url) = Url::parse(uri) {
-        if let Ok(path) = if uri.starts_with("wry://") {
+        if let Ok(path) = if uri.starts_with("wry://pages") {
             Ok(PathBuf::from(format!("./{}", uri.replace("wry://", ""))))
         } else { url.to_file_path() } {
             let test;
@@ -74,32 +74,43 @@ fn request2response(uri: &str) -> Result<Response, Error> {
         };
     };
     ResponseBuilder::new()
-        .header("Location", "src/NotFound.html")
+        .header("Location", "pages/NotFound.html")
         .status(301)
         .body(Vec::new())
 }
 
 
 /// リクエストをイベントでラップしてイベントループに送信します。
-/// APIリクエストの処理を実行するのはmain.rsからです。(ライフタイムがどうたらこうたらの関係上の設計がこれです)
+/// APIリクエストの処理を実行するのはmain.rsにあるイベントループのイベントハンドラー内からです。
+/// (ライフタイムがどうたらこうたらの関係上設計がこうなっています。もし誰か対処法を知っているのなら教えてほしいです)
 fn request2waiter(
-    proxy: EventLoopProxy<UserEvents>, queues: Ref<Vec<Queue>>, request: &Request
+    proxy: EventLoopProxy<UserEvents>, mut queues: RefMut<Vec<Queue>>, request: &Request
 ) -> Result<Response, Error> {
     if request.uri().starts_with("wry://api/") {
         if request.uri().contains("reply") {
-            match queues.first() {
-                Some(queue) => ResponseBuilder::new()
-                    .status(200).body(queue.body.clone()),
-                _ => ResponseBuilder::new()
+            // リクエストの返信をあればする。
+            let mut replied = false;
+            let response = match queues.first() {
+                Some(queue) => {
+                    replied = true;
+                    ResponseBuilder::new()
+                        .header("Access-Control-Allow-Origin", "*")
+                        .status(queue.status).body(queue.body.clone())
+                }, _ => ResponseBuilder::new()
+                    .header("Access-Control-Allow-Origin", "*")
                     .status(503).body(Vec::new())
-            }
+            };
+            // もし返信をするのなら最後の返信キューを削除する。
+            if replied { queues.remove(0); };
+            response
         } else {
-            // イベントを送信する。
+            // APIリクエストのイベントを送信する。
             let _ = proxy.send_event(UserEvents::Request(RequestData {
                 uri: request.uri().to_string(), body: String::from_utf8(request.body.clone())
                     .unwrap_or("".to_string())
             }));
             ResponseBuilder::new()
+                .header("Access-Control-Allow-Origin", "*")
                 .status(201)
                 .body(Vec::new())
         }
@@ -124,118 +135,6 @@ impl Manager {
         Ok(manager)
     }
 
-    /// APIリクエストを処理します。
-    pub fn on_request(&mut self, uri: &str, data: String) -> Queue {
-        // 色々整えたり下準備をする。
-        let tentative_path = uri.replace("wry://api/", "")
-            .replace("?", "/");
-        let path: Vec<&str> = tentative_path.split("/").collect();
-        let error = RefCell::new("Not found".to_string());
-        let borrowed = error.borrow();
-        let make_error = || Queue {
-            status: 400, body: borrowed.bytes().collect()
-        };
-
-        /* 以下は将来性を考慮してでのコメントアウトです。
-        let tentative_url = Url::parse(uri);
-        if let Err(_) = tentative_url { return make_error(); };
-        let url = tentative_url.unwrap();
-        */
-
-        let length = path.len();
-        let (OK, NOTFOUND) = (
-            Ok("Ok".to_string()), Err("Not found".to_string())
-        );
-        if length <= 3 { return make_error(); };
-        let mut write_mode = "";
-
-        // リクエストを処理する。
-        let tentative = match path[0] {
-            "setting" => {
-                // setting/...
-                // 一般の設定の取得と更新
-                write_mode = "general";
-                match path[1] {
-                    // 言語設定
-                    "language" => {
-                        if path[2] == "update" {
-                            if "jaen".contains(&data) {
-                                set_locale(&data);
-                                OK
-                            } else { Err(t!("core.setting.notAppropriateLanguage")) }
-                        } else { Ok(to_string(&self.data.general.language).unwrap()) }
-                    },
-                    "wallpapers" => {
-                        // 登録されている壁紙
-                        if path[2] == "update" {
-                            if let Ok(wallpapers) =
-                                    from_str::<Vec<Target>>(&data) {
-                                self.data.general.wallpapers = wallpapers;
-                                OK
-                            } else { Err(t!("core.setting.loadJsonFailed")) }
-                        } else {
-                            Ok(to_string(&self.data.general.wallpapers).unwrap())
-                        }
-                    },
-                    "updateInterval" => {
-                        // 背景ウィンドウの位置とサイズ更新の設定
-                        if path[2] == "update" {
-                            if let Ok(value) = data.parse() {
-                                self.data.general.updateInterval = value;
-                                OK
-                            } else { Err("Failed to parse value.".to_string()) }
-                        } else { Ok(self.data.general.updateInterval.to_string()) }
-                    },
-                    "dev" => {
-                        // 開発者モードをONにするかどうか。
-                        if path[2] == "update" {
-                            self.data.general.dev = if data == "1" { true } else { false };
-                            OK
-                        } else { Ok((self.data.general.dev as usize).to_string()) }
-                    },
-                    _ => NOTFOUND
-                }
-            },
-            "wallpapers" => {
-                // wallpapers/...
-                // 壁紙リストの壁紙の設定
-                write_mode = "wallpapers";
-                match path[1] {
-                    "all" => {
-                        // 全ての壁紙を取得します。
-                        if path[2] == "update" { OK }
-                        else {
-                            let mut response_data = HashMap::new();
-                            for wallpaper in self.data.wallpapers.iter() {
-                                response_data.insert(
-                                    wallpaper.name.clone(), wallpaper.detail.clone()
-                                );
-                            };
-                            Ok(to_string(&response_data).unwrap())
-                        }
-                    }, _ => NOTFOUND
-                }
-            },
-            _ => NOTFOUND
-        };
-
-        // もしデータ書き込みが必要なら書き込む。
-        if !write_mode.is_empty() {
-            match write_mode {
-                "general" => self.data.write_setting(),
-                "wallpapers" => self.data.write_wallpaper(1),
-                _ => Err("The world is revolving!".to_string())
-            }.unwrap();
-        };
-
-        // レスポンスデータをまとめる。
-        if let Ok(response_data) = tentative {
-            return Queue { status: 200, body: response_data.bytes().collect() };
-        } else { *error.borrow_mut() = tentative.err().unwrap() };
-
-        make_error()
-    }
-
     /// 設定画面を作ります。
     pub fn make_setting_window(&mut self, event_loop: &EventLoopWindowTarget<UserEvents>) -> WebView {
         // 設定ウィンドウを作る。
@@ -247,10 +146,10 @@ impl Manager {
         WebViewBuilder::new(window).unwrap()
             .with_custom_protocol(
                 "wry".into(), move |request| request2waiter(
-                    proxy.clone(), cloned_queues.borrow(), request
+                    proxy.clone(), cloned_queues.borrow_mut(), request
                 )
             )
-            .with_url("wry://src/setting.html").unwrap()
+            .with_url("wry://pages/_home.html").unwrap()
             .with_dev_tool(self.data.general.dev)
             .build().expect("Failed to build the setting webview.")
     }
@@ -274,7 +173,7 @@ impl Manager {
                 let webview = WebViewBuilder::new(window).unwrap()
                     .with_custom_protocol(
                         "wry".into(), move |request| request2waiter(
-                            proxy.clone(), cloned_queues.borrow(), request
+                            proxy.clone(), cloned_queues.borrow_mut(), request
                         )
                     )
                     .with_url(&url.to_string()).unwrap()
@@ -380,5 +279,127 @@ impl Manager {
         };
 
         Ok(())
+    }
+
+    /// APIリクエストを処理します。
+    pub fn on_request(&mut self, uri: &str, data: String) -> Queue {
+        // 色々整えたり下準備をする。
+        let tentative_path = uri.replace("wry://api/", "")
+            .replace("?", "/");
+        let path: Vec<&str> = tentative_path.split("/").collect();
+        let error = RefCell::new("Not found".to_string());
+        let borrowed = error.borrow();
+        let make_error = || Queue {
+            status: 400, body: borrowed.bytes().collect()
+        };
+
+        /* 以下は将来性を考慮してでのコメントアウトです。
+        let tentative_url = Url::parse(uri);
+        if let Err(_) = tentative_url { return make_error(); };
+        let url = tentative_url.unwrap();
+        */
+
+        if path.len() < 3 { return make_error(); };
+        let (OK, NOTFOUND) = (
+            Ok("Ok".to_string()), Err("Not found".to_string())
+        );
+        let mut write_mode = "";
+        let is_update = path[2] == "update";
+
+        // リクエストを処理する。
+        let tentative = match path[0] {
+            "setting" => {
+                // setting/...
+                // 一般の設定の取得と更新
+                write_mode = "general";
+                match path[1] {
+                    // 言語設定
+                    "language" => {
+                        if is_update {
+                            if "jaen".contains(&data) {
+                                set_locale(&data);
+                                self.data.general.language = data;
+                                OK
+                            } else { Err(t!("core.setting.notAppropriateLanguage")) }
+                        } else { Ok(self.data.general.language.clone()) }
+                    },
+                    "wallpapers" => {
+                        // 登録されている壁紙
+                        if is_update {
+                            if let Ok(wallpapers) =
+                                    from_str::<Vec<Target>>(&data) {
+                                self.data.general.wallpapers = wallpapers;
+                                OK
+                            } else { Err(t!("core.setting.loadJsonFailed")) }
+                        } else {
+                            Ok(to_string(&self.data.general.wallpapers).unwrap())
+                        }
+                    },
+                    "interval" => {
+                        // 背景ウィンドウの位置とサイズ更新の設定
+                        if is_update {
+                            if let Ok(value) = data.parse() {
+                                self.data.general.updateInterval = value;
+                                OK
+                            } else { Err("Failed to parse value.".to_string()) }
+                        } else { Ok(self.data.general.updateInterval.to_string()) }
+                    },
+                    "dev" => {
+                        // 開発者モードをONにするかどうか。
+                        if is_update {
+                            self.data.general.dev = if data == "1" { true } else { false };
+                            OK
+                        } else { Ok((self.data.general.dev as usize).to_string()) }
+                    },
+                    _ => NOTFOUND
+                }
+            },
+            "wallpapers" => {
+                // wallpapers/...
+                // 壁紙リストの壁紙の設定
+                write_mode = "wallpapers";
+                match path[1] {
+                    "all" => {
+                        // 全ての壁紙を取得します。
+                        if is_update { OK }
+                        else {
+                            let mut response_data = HashMap::new();
+                            for wallpaper in self.data.wallpapers.iter() {
+                                response_data.insert(
+                                    wallpaper.name.clone(), wallpaper.detail.clone()
+                                );
+                            };
+                            Ok(to_string(&response_data).unwrap())
+                        }
+                    }, _ => NOTFOUND
+                }
+            },
+            "templates" => {
+                // templates/all/get
+                // テンプレートの取得を行えます。
+                Ok(to_string(&self.data.templates).unwrap())
+            },
+            "gettext" => {
+                // gettext/<text>/get
+                Ok(t!(path[2]))
+            },
+            _ => NOTFOUND
+        };
+
+        // もしデータ書き込みが必要なら書き込む。
+        if is_update {
+            match write_mode {
+                "general" => self.data.write_setting(),
+                "wallpapers" => self.data.write_wallpaper(1),
+                _ => Err("The world is revolving!".to_string())
+            }.unwrap();
+        };
+
+        // レスポンスデータをまとめる。
+        if let Ok(response_data) = tentative {
+            return Queue { status: 200, body: response_data.bytes().collect() };
+        } else { *error.borrow_mut() = tentative.err().unwrap() };
+
+        make_error()
     }
 }

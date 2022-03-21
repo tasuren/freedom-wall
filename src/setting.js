@@ -1,1 +1,0 @@
-//! FreedomWall - Setting

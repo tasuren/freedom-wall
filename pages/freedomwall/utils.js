@@ -1,8 +1,9 @@
 //! FreedomWall.js - Utils
 
-var alertThrow = false;
-const SILENT = () => {};
-const POST = "POST";
+export const alertThrow = true;
+export const afterReload = true;
+export const SILENT = () => {};
+export const POST = "POST";
 
 
 /**
@@ -12,12 +13,12 @@ const POST = "POST";
  * @param {Object} body - Data to be sent.
  * @param {function(Response)} callback - response will be passed to this.
  */
- export function request(method, endpoint, body, callback) {
-    if (endpoint.indexOf("reply") === -1) {
+export function request(method, endpoint, body, callback, interval=1000) {
+    if (endpoint.indexOf("reply") !== -1) {
         throw "This endpoint is not available.";
     };
     let isString = typeof(body) == "string" || body instanceof String;
-    return await fetch(new Request(`wry://api/${endpoint}`, {
+    fetch(new Request(`wry://api/${endpoint}`, {
         method: method,
         header: {"Content-Type": isString ? "text/plain" : "application/json"},
         body: isString ? body : JSON.stringify(body)
@@ -33,18 +34,18 @@ const POST = "POST";
                             .then(response => {
                                 if (response.status != 503) {
                                     ok = true;
-                                    response.text().then(text => {
-                                        if (response.status == 400 || response.status == 404) {
+                                    if (response.status == 400 || response.status == 404) {
+                                        response.text().then(text => {
                                             if (alertThrow) { alert(text); };
                                             throw text;
-                                        };
-                                    })
-                                    callback(response);
+                                        });
+                                    } else { callback(response); };
+                                    if (afterReload && endpoint.endsWith("update")) { location.reload(); };
                                 };
-                            });
+                            })
                     };
-                }, 1000 * i);
-                if (!ok) { break; };
+                }, interval * i);
+                if (ok) { break; };
             };
         });
 };

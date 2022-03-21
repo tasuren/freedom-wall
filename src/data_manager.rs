@@ -379,7 +379,7 @@ impl DataManager {
                 &format!("{}/data.json", extension.path),
                 to_string_pretty(&extension.detail)
                     .expect(FAILED_JSON)
-            );
+            )?;
             Ok(())
         } else { Err(t!("core.setting.readFailed", path=&name)) }
     }
@@ -398,7 +398,7 @@ impl DataManager {
         write(
             &format!("{}/data.json", wallpaper.path), to_string_pretty(&wallpaper.detail)
                 .expect(FAILED_JSON)
-        );
+        )?;
         Ok(())
     }
 

@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+  {% block head %}
+  <title>FreedomWall - {% block title %}{% endblock title %}</title>
+  <meta name="description" content="FreedomWall's Setting Page">
+  <meta name="author" content="tasuren">
+  <link rel="stylesheet" href="./style.css" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta charset="utf-8">
+  {% endblock head %}
+  <script type="module">
+    import { getLanguage } from "./freedomwall/setting.js";
+
+    let beforeWindowOnLoad = window.onload;
+    window.onload = function () {
+        // 違う言語は削除する。
+        getLanguage(language => {
+            for (let element of document.getElementsByClassName("language")) {
+                if (!element.classList.contains(language)) {
+                    element.remove();
+                };
+            };
+        }, 10);
+        if (beforeWindowOnLoad) { beforeWindowOnLoad(); };
+    };
+  </script>
+<body>
+  <div class="container">
+    <div class="menu">
+      <h1>FreedomWall</h1>
+      <ul>
+        <li><a href="./_home.html">Home</a></li>
+        <li><a href="./_setting.html">Setting</a></li>
+        <li><a href="./_wallpapers.html">Wallpapers</a></li>
+        <li><a href="./_extensions.html">Extensions</a></li>
+      </ul>
+    </div>
+    <div class="content" id="main">
+      {% block content %}{% endblock content %}
+    </div>
+  </div>
+</body>
+</html>

@@ -3,3 +3,6 @@ Cargo.lock
 *.*-workspace
 *.*-project
 .DS_Store
+
+_*.html
+.vscode

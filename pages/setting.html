@@ -1,0 +1,49 @@
+{% extends "layout.html" %}
+{% block title %}Home{% endblock title %}
+{% block head %}{{ super() }}
+<script type="module">
+  import { getLanguage, postLanguage, getWallpapers } from "./freedomwall/setting.js";
+  import { afterReload } from "./freedomwall/utils.js";
+
+  window.onload = function () {
+    let languageSelect = document.getElementById("language");
+    // 言語設定を現在設定されているものにセレクトしておく。
+    getLanguage(language => {
+      for (let element of languageSelect.getElementsByTagName("option")) {
+        if (element.value == language) {
+          element.selected = true;
+        };
+      };
+    });
+
+    // 使用可能な壁紙を追加する。
+    getWallpapers(wallpapers => {
+      
+    })
+  };
+  window._postLanguage = postLanguage;
+
+  window._addWallpaper = function (mode) {
+    
+  };
+</script>
+{% endblock head %}
+{% block content %}
+  <h1 id="subject">Setting</h1>
+  <div class="language ja">ここでは壁紙等の設定を行うことができます。</div>
+  <div class="language en">Here you can set wallpaper and other settings.</div>
+  <h2>General</h2>
+  <h3 class="language en">Language</h3>
+  <h3 class="language ja">言語設定</h3>
+  <select onchange="window._postLanguage(this.value);" id="language" name="language">
+    <option value="en">English</option>
+    <option value="ja">日本語</option>
+  </select>
+  <h3 class="language en">Wallpaper settings</h3>
+  <h3 class="language ja">壁紙設定</h3>
+  <div id="wallpapers">
+    <select onchange="window._addWallpaper(this.value);" name="add-wallpapers"></select>
+    <label for="add-wallpapers" class="language en">Add</label>
+    <label for="add-wallpapers" class="language ja">追加</label>
+  </div>
+{% endblock content %}
