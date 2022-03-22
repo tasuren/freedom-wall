@@ -15,12 +15,13 @@ use wry::{
     Error
 };
 use serde_json::{ to_string, from_str };
+use serde::Deserialize;
 use url::Url;
 use rust_i18n::{ t, set_locale };
 
 use super::{
     window::{ Window, WindowTrait },
-    data_manager::{ DataManager, Wallpaper, Target },
+    data_manager::{ DataManager, Wallpaper, WallpaperJson, Target },
     platform::get_windows, APPLICATION_NAME
 };
 
@@ -50,7 +51,10 @@ pub struct RequestData {
 
 
 /// レスポンスを入れてmain.rsにて実行するのに使うユーザーイベントの列挙型です。
-pub enum UserEvents { Request(RequestData) }
+pub enum UserEvents {
+    Request(RequestData),
+    ChangeInterval(f32)
+}
 
 
 /// リクエストから適切なファイルを探し出しそれを返します。
@@ -237,7 +241,8 @@ impl Manager {
             for target in self.data.general.wallpapers.iter() {
                 // 背景を設定すべきウィンドウかどうかを調べる。
                 if target.targets.iter().any(|target| title.contains(target))
-                        && target.exceptions.iter().all(|exception| !title.contains(exception)) {
+                        && (target.exceptions.len() == 0 || target.exceptions.iter()
+                            .all(|exception| !title.contains(exception))) {
                     // 既に背景ウィンドウを設定している場合はそのウィンドウの位置と大きさを対象のウィンドウに合わせる。
                     let mut first = true;
                     for window in self.windows.iter_mut() {
@@ -299,7 +304,8 @@ impl Manager {
         let url = tentative_url.unwrap();
         */
 
-        if path.len() < 3 { return make_error(); };
+        let length = path.len();
+        if length < 3 { return make_error(); };
         let (OK, NOTFOUND) = (
             Ok("Ok".to_string()), Err("Not found".to_string())
         );
@@ -329,6 +335,10 @@ impl Manager {
                             if let Ok(wallpapers) =
                                     from_str::<Vec<Target>>(&data) {
                                 self.data.general.wallpapers = wallpapers;
+                                // 現在開かれている背景ウィンドウを消す。
+                                for _ in 0..self.windows.len() {
+                                    self.windows.pop();
+                                };
                                 OK
                             } else { Err(t!("core.setting.loadJsonFailed")) }
                         } else {
@@ -340,6 +350,9 @@ impl Manager {
                         if is_update {
                             if let Ok(value) = data.parse() {
                                 self.data.general.updateInterval = value;
+                                let _ = self.proxy.send_event(UserEvents::ChangeInterval(
+                                    self.data.general.updateInterval
+                                ));
                                 OK
                             } else { Err("Failed to parse value.".to_string()) }
                         } else { Ok(self.data.general.updateInterval.to_string()) }
@@ -357,12 +370,17 @@ impl Manager {
             "wallpapers" => {
                 // wallpapers/...
                 // 壁紙リストの壁紙の設定
-                write_mode = "wallpapers";
                 match path[1] {
                     "all" => {
                         // 全ての壁紙を取得します。
-                        if is_update { OK }
-                        else {
+                        if is_update {
+                            let data: Vec<&str> = data.split("?").collect();
+                            match self.data.add_wallpaper(
+                                data[0].to_string(), data[2].to_string()
+                            ) {
+                                Err(message) => Err(message), _ => OK
+                            }
+                        } else {
                             let mut response_data = HashMap::new();
                             for wallpaper in self.data.wallpapers.iter() {
                                 response_data.insert(
@@ -371,6 +389,31 @@ impl Manager {
                             };
                             Ok(to_string(&response_data).unwrap())
                         }
+                    },
+                    "one" => {
+                        // 壁紙プロファイルの削除か更新
+                        if is_update && length >= 5 {
+                            match self.data.get_wallpaper_index(path[3]) {
+                                Some(index) => {
+                                    if let Err(message) = if path[4] == "write" {
+                                        self.data.wallpapers[index].detail = from_str
+                                            ::<WallpaperJson>(&data).unwrap();
+                                        self.data.write_wallpaper(index)
+                                    } else {
+                                        self.data.wallpapers.remove(index);
+                                        self.data.remove_wallpaper(index)
+                                    } { Err(message) } else { OK }
+                                }, _ => NOTFOUND
+                            }
+                        } else { OK }
+                    },
+                    "rename" => {
+                        // 壁紙プロファイルの名前変更
+                        if length >= 5 {
+                            if let Err(message) = self.data.mv_wallpaper(path[3], path[4]) {
+                                Err(message)
+                            } else { OK }
+                        } else { OK }
                     }, _ => NOTFOUND
                 }
             },
@@ -387,10 +430,9 @@ impl Manager {
         };
 
         // もしデータ書き込みが必要なら書き込む。
-        if is_update {
+        if is_update && !write_mode.is_empty(){
             match write_mode {
                 "general" => self.data.write_setting(),
-                "wallpapers" => self.data.write_wallpaper(1),
                 _ => Err("The world is revolving!".to_string())
             }.unwrap();
         };

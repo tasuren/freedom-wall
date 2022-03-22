@@ -2,7 +2,7 @@
 
 use std::{
     collections::HashMap, env::args, path::{ Path, PathBuf },
-    ffi::OsStr, fs::{ File, read_to_string, create_dir, copy, remove_dir },
+    ffi::OsStr, fs::{ File, read_to_string, create_dir, rename, copy, remove_dir },
     io::Write, cell::RefCell
 };
 
@@ -93,8 +93,7 @@ pub struct ExtensionJson {
     pub description: String,
     pub author: String,
     pub version: String,
-    pub setting: HashMap<String, String>,
-    pub data: String
+    pub setting: HashMap<String, String>
 }
 
 
@@ -151,9 +150,11 @@ fn get_name<'a>(path: &'a PathBuf) -> &'a str {
 /// また、on_found引数でファイルの読み込み処理等も行うこともできます。
 /// on_foundに渡されるものは左から順にフォルダのパス,フォルダのPathBuf,ファイル名,ファイルのパス
 fn search_files<F: Fn(String, &PathBuf, &str, &String) -> ()>(
-    path: &str, targets: Vec<&str>, on_found: F
+    path: &str, targets: Vec<&str>, on_found: F, do_add_setting_path: bool
 ) -> Result<(), String> {
-    if let Some(dirs) = get_files(&PathBuf::from(add_setting_path(path)?), true) {
+    if let Some(dirs) = get_files(&PathBuf::from(
+        if do_add_setting_path { add_setting_path(path)? } else { path.to_string() }), true
+    ) {
         // ファイルを探す。
         for path in dirs {
             let path_string = &path.display().to_string();
@@ -250,7 +251,7 @@ fn read_wallpapers() -> Result<Wallpapers, String> {
                 };
                 *error.borrow_mut() = failed_read(path);
             };
-        }
+        }, true
     )?;
     if !error.borrow().is_empty() { return Err(error.into_inner()) };
     Ok(wallpapers.into_inner())
@@ -259,8 +260,8 @@ fn read_wallpapers() -> Result<Wallpapers, String> {
 
 /// テンプレートを読み込みます。
 fn read_templates() -> Result<Templates, String> {
-    search_files("templates", vec!["index.html", "data.json"], |_,_,_,_| {})?;
-    if let Some(data) = get_files(&PathBuf::from(add_setting_path("templates")?), true) {
+    search_files("templates", vec!["index.html", "data.json"], |_,_,_,_| {}, false)?;
+    if let Some(data) = get_files(&PathBuf::from("templates"), true) {
         let mut result = Vec::new();
         for path in data {
             result.push(get_name(&path).to_string());
@@ -288,7 +289,7 @@ fn read_extensions() -> Result<Extensions, String> {
                 };
                 *error.borrow_mut() = failed_read(path);
             };
-        }
+        }, true
     )?;
     if !error.borrow().is_empty() { return Err(error.into_inner()) };
     Ok(extensions.into_inner())
@@ -411,16 +412,14 @@ impl DataManager {
     }
 
     /// 壁紙プロファイルを追加します。
-    pub fn add_wallpaper(
-        &mut self, template: String, name: String, data: WallpaperJson
-    ) -> Result<(), String> {
+    pub fn add_wallpaper(&mut self, template: String, name: String) -> Result<(), String> {
         if self.templates.contains(&template) {
             if self.get_wallpaper(&name).is_none() {
                 let path = add_setting_path(&format!("wallpapers/{}", name))?;
                 // フォルダの作る。
                 match create_dir(&path) {
                     Ok(_) => {
-                        let original_path = add_setting_path(&format!("templates/{}", template))?;
+                        let original_path = &format!("templates/{}", template);
                         // ファイルのコピーを行う。
                         for filename in vec!["index.html", "data.json"] {
                             if let Err(_) = copy(
@@ -430,15 +429,29 @@ impl DataManager {
                                 return Err(t!("core.setting.copyFailed", path=&name));
                             };
                         };
-                        self.wallpapers.push(Wallpaper {
-                            name: name, path: path, detail: data
-                        });
-                        Ok(())
+                        if let Ok(wallpaper) = from_str::<WallpaperJson>(
+                            &read(&format!("{}/{}", path, "data.json"))?
+                        ) {
+                            self.wallpapers.push(Wallpaper {
+                                name: name, path: path, detail: wallpaper
+                            });
+                            Ok(())
+                        } else { Err(t!("core.setting.readFailed", path="data.json")) }
                     },
                     _ => Err(t!("core.setting.mkdirFailed", path=&path))
                 }
             } else { Err(t!("core.setting.alreadyAdded", name=&name)) }
         } else { Err(t!("core.setting.failedRead", path=&template)) }
+    }
+
+    /// 壁紙の設定のインデックス番号を取得します。
+    pub fn get_wallpaper_index(&self, name: &str) -> Option<usize> {
+        for (index, wallpaper) in self.wallpapers.iter().enumerate() {
+            if wallpaper.name == name {
+                return Some(index);
+            };
+        };
+        None
     }
 
     /// 壁紙の設定を取得します。
@@ -449,5 +462,21 @@ impl DataManager {
             };
         };
         None
+    }
+
+    /// 壁紙の名前を変更します。
+    pub fn mv_wallpaper(&mut self, before: &str, after: &str) -> Result<(), String> {
+        if self.get_wallpaper(before).is_some() {
+            for wallpaper in self.wallpapers.iter_mut() {
+                if wallpaper.name == before {
+                    wallpaper.name = after.to_string();
+                    if rename(
+                        wallpaper.path.to_string(),
+                        add_setting_path(&format!("wallpapers/{}", after))?
+                    ).is_err() { return Err(t!("core.setting.renameFailed")); };
+                };
+            };
+            Ok(())
+        } else { Err(t!("core.general.findAppropriateWallpaperFailed", name=before)) }
     }
 }

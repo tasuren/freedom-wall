@@ -2,9 +2,15 @@
 {% block title %}Home{% endblock title %}
 {% block head %}{{ super() }}
 <script type="module">
-  import { getLanguage, postLanguage, getWallpapers } from "./freedomwall/setting.js";
-  import { afterReload } from "./freedomwall/utils.js";
+  import {
+    getLanguage, postLanguage,
+    getWallpapers as getTargets,
+    postWallpapers as postTargets
+  } from "./freedomwall/setting.js";
+  import { getWallpapers } from "./freedomwall/wallpapers.js";
+  import { SILENT, afterReload } from "./freedomwall/utils.js";
 
+  let original = window.onload;
   window.onload = function () {
     let languageSelect = document.getElementById("language");
     // 言語設定を現在設定されているものにセレクトしておく。
@@ -14,18 +20,51 @@
           element.selected = true;
         };
       };
-    });
 
-    // 使用可能な壁紙を追加する。
-    getWallpapers(wallpapers => {
-      
-    })
+      // 使用可能な壁紙を追加する。
+      getWallpapers(wallpapers => {
+        let select = document.getElementById("add-wallpapers");
+
+        Object.keys(wallpapers).forEach(key => {
+          select.innerHTML += `<option value="${key}">${key}</option>`;
+        });
+
+        getTargets(targets => {
+          let table = document.getElementById("wallpapers");
+
+          window._addWallpaper = function (name) {
+            targets.push({targets: ["nothing"], exceptions: [], alpha: 0.2, wallpaper: name});
+            postTargets(targets);
+          };
+
+          window.editTargetFunctions = {};
+
+          for (let index in targets) {
+            let target = targets[index];
+            let name = window.escapeHTML(target.wallpaper);
+            window.editTargetFunctions[index] = function (uindex) {
+              let rawTargets = document.getElementById(`${uindex}-targets`).value;
+              targets[uindex].targets = rawTargets.split(",");
+              targets[uindex].exceptions = document.getElementById(`${uindex}-exceptions`).value.split(",");
+              targets[uindex].alpha = Number(document.getElementById(`${uindex}-alpha`).value);
+              if (!rawTargets) targets.splice(uindex, 1);
+              postTargets(targets);
+            };
+            table.innerHTML += `<tr>
+              <td>${name}</td>
+              <td><input id="${index}-targets" type="text" value="${window.escapeHTML(target.targets.join(","))}"></input></td>
+              <td><input id="${index}-exceptions" type="text" value="${window.escapeHTML(target.exceptions.join(","))}"></input></td>
+              <td><input id="${index}-alpha" min="0.0" max="1.0" step="0.05" type="number" value="${target.alpha}"></input></td>
+              <td><button type="button" name="${index}" onclick="window.editTargetFunctions[this.name](${index});">Save</button></td>
+            </tr>`;
+          };
+
+          original();
+        });
+      });
+    });
   };
   window._postLanguage = postLanguage;
-
-  window._addWallpaper = function (mode) {
-    
-  };
 </script>
 {% endblock head %}
 {% block content %}
@@ -41,9 +80,30 @@
   </select>
   <h3 class="language en">Wallpaper settings</h3>
   <h3 class="language ja">壁紙設定</h3>
-  <div id="wallpapers">
-    <select onchange="window._addWallpaper(this.value);" name="add-wallpapers"></select>
-    <label for="add-wallpapers" class="language en">Add</label>
-    <label for="add-wallpapers" class="language ja">追加</label>
+  <div class="language ja">
+    ここではどのアプリにどの壁紙を付けるかの設定をすることができます。<br>
+    設定する壁紙はWallpapersから登録してください。<br>
+    右のSaveを押すことで設定の保存をすることができます。<br>
+    設定を削除したい場合は対象の入力欄を空にしてください。
   </div>
+  <div class="language en">
+    Here you can set which wallpaper will be attached to which application.<br>
+    Please register the wallpaper to be set from Wallpapers.<br>
+    You can save your settings by pressing Save on the right.<br>
+    If you want to delete a setting, leave the target entry field empty.
+  </div>
+  <br>
+  <label for="add-wallpapers" class="language en">Add:</label>
+  <label for="add-wallpapers" class="language ja">追加：</label>
+  <select onchange="window._addWallpaper(this.value);" name="add-wallpapers" id="add-wallpapers">
+    <option value="..." selected>...</option>
+  </select>
+  <table id="wallpapers">
+    <tr class="language ja">
+      <th>壁紙</th><th>対象</th><th>例外</th><th>透明度</th><th>保存</th>
+    </tr>
+    <tr class="language en">
+      <th>Wallpaper</th><th>Targets</th><th>Exceptions</th><th>Transparency</th><th>Save</th>
+    </tr>
+  </table>
 {% endblock content %}

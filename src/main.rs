@@ -34,7 +34,7 @@ fn main() {
         error(&text);
     } else {
         let mut manager = manager_option.unwrap();
-        let update_interval = Duration::from_secs_f32(manager.data.general.updateInterval);
+        let mut update_interval = Duration::from_secs_f32(manager.data.general.updateInterval);
 
         event_loop.run(move |event, event_loop_target, control_flow| {
             match event {

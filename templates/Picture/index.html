@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta charset="utf-8">
+  <title>FreedomWall's wallpaper</title>
+  <meta name="description" content="FreedomWallの壁紙表示用のWebページです。">
+  <meta name="author" content="tasuren">
+  <script>
+    const URL = new URL(window.location.origin);
+    const PARAMS = new URLSearchParams(url.search);
+    document.getElementById("background").setAttribute("src", PARAMS[0][1]);
+  </script>
+<body>
+  <div id="background-container">
+    <img class="background" id="background" src="" />
+  </div>
+</body>
+</html>

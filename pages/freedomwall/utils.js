@@ -13,10 +13,12 @@ export const POST = "POST";
  * @param {Object} body - Data to be sent.
  * @param {function(Response)} callback - response will be passed to this.
  */
-export function request(method, endpoint, body, callback, interval=1000) {
+export function request(method, endpoint, body, callback, interval=1000, reload=true) {
     if (endpoint.indexOf("reply") !== -1) {
         throw "This endpoint is not available.";
     };
+    let doReload = reload && afterReload && endpoint.endsWith("update");
+    if (doReload && window.loadingShow) window.loadingShow();
     let isString = typeof(body) == "string" || body instanceof String;
     fetch(new Request(`wry://api/${endpoint}`, {
         method: method,
@@ -34,13 +36,13 @@ export function request(method, endpoint, body, callback, interval=1000) {
                             .then(response => {
                                 if (response.status != 503) {
                                     ok = true;
-                                    if (response.status == 400 || response.status == 404) {
+                                    if (response.status == 400 || response.status == 404)
                                         response.text().then(text => {
                                             if (alertThrow) { alert(text); };
                                             throw text;
                                         });
-                                    } else { callback(response); };
-                                    if (afterReload && endpoint.endsWith("update")) { location.reload(); };
+                                    else callback(response);
+                                    if (doReload) location.reload();
                                 };
                             })
                     };

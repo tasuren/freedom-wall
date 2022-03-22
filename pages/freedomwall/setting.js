@@ -50,7 +50,7 @@ export function postWallpapers(wallpapers) {
 export function getWallpapers(callback) {
     request(
         POST, "setting/wallpapers/get", "",
-        response => response.text().then(callback)
+        response => response.json().then(callback)
     );
 };
 
