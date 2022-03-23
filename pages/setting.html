@@ -45,7 +45,8 @@
             window.editTargetFunctions[index] = function (uindex) {
               let rawTargets = document.getElementById(`${uindex}-targets`).value;
               targets[uindex].targets = rawTargets.split(",");
-              targets[uindex].exceptions = document.getElementById(`${uindex}-exceptions`).value.split(",");
+              let exceptions = document.getElementById(`${uindex}-exceptions`).value;
+              targets[uindex].exceptions = exceptions ? exceptions.split(",") : [];
               targets[uindex].alpha = Number(document.getElementById(`${uindex}-alpha`).value);
               if (!rawTargets) targets.splice(uindex, 1);
               postTargets(targets);
