@@ -50,6 +50,9 @@ fn main() {
                         *control_flow = ControlFlow::Exit;
                     };
                 },
+                Event::UserEvent(UserEvents::ChangeInterval(interval)) => {
+                    update_interval = Duration::from_secs_f32(interval);
+                },
                 Event::UserEvent(UserEvents::Request(request)) => {
                     // APIリクエストを処理する。ここでやらなければエラーが起きてしまう。理由は`manager.rs`にて記述済み。
                     let response = manager.on_request(&request.uri, request.body.clone());

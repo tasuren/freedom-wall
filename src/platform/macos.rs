@@ -167,7 +167,6 @@ pub fn get_windows() -> (Vec<String>, Vec<(Vec<f64>, bool)>) {
         ).expect("CFNumberの値の取り出しに失敗しました。");
         if &title == "Dock" && layer != 0 { next_main = true; continue; };
         if layer != 0 { continue; }; // 一般の人がウィンドウだと思うウィンドウ以外は除外する。(タスクトレイアイコン等)
-        if &title == "FreedomWall" { continue; };
 
         if title.is_empty() {
             if next_main { next_main = false; };

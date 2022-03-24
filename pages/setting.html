@@ -96,6 +96,7 @@
   <br>
   <label for="add-wallpapers" class="language en">Add:</label>
   <label for="add-wallpapers" class="language ja">追加：</label>
+  <br>
   <select onchange="window._addWallpaper(this.value);" name="add-wallpapers" id="add-wallpapers">
     <option value="..." selected>...</option>
   </select>
@@ -107,4 +108,9 @@
       <th>Wallpaper</th><th>Targets</th><th>Exceptions</th><th>Transparency</th><th>Save</th>
     </tr>
   </table>
+  <h3 class="language en">Wallpaper window adjustment interval</h3>
+  <h3 class="language ja">背景ウィンドウ調整間隔</h3>
+  <div class="language ja">
+    背景ウィンドウの位置とサイズを調整する間隔を設定します。
+  </div>
 {% endblock content %}

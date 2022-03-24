@@ -15,7 +15,6 @@ use wry::{
     Error
 };
 use serde_json::{ to_string, from_str };
-use serde::Deserialize;
 use url::Url;
 use rust_i18n::{ t, set_locale };
 
@@ -32,7 +31,8 @@ pub struct Manager {
     pub data: DataManager,
     pub setting: Option<WebView>,
     pub proxy: EventLoopProxy<UserEvents>,
-    pub queues: Rc<RefCell<Vec<Queue>>>
+    pub queues: Rc<RefCell<Vec<Queue>>>,
+    pub is_setting: bool
 }
 
 
@@ -133,7 +133,8 @@ impl Manager {
         set_locale(&data.general.language);
         let mut manager = Self {
             windows: Vec::new(), data: data, setting: None,
-            proxy: proxy, queues: Rc::new(RefCell::new(Vec::new()))
+            proxy: proxy, queues: Rc::new(RefCell::new(Vec::new())),
+            is_setting: false
         };
         manager.setting = Some(manager.make_setting_window(event_loop));
         Ok(manager)
@@ -237,6 +238,7 @@ impl Manager {
 
         // 背景を設定すべきウィンドウを探す。
         for (title, (rect, main)) in titles.iter().zip(rects) {
+            if title.contains("FreedomWall") { continue; };
             let mut make = None;
             for target in self.data.general.wallpapers.iter() {
                 // 背景を設定すべきウィンドウかどうかを調べる。
