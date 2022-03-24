@@ -60,7 +60,7 @@ export function getWallpapers(callback) {
  * @param {number} interval - Interval
  */
 export function postInterval(interval) {
-    request(POST, "setting/interval/post", interval.toString(), SILENT);
+    request(POST, "setting/interval/update", interval.toString(), SILENT);
 };
 
 
@@ -73,6 +73,15 @@ export function getInterval(callback) {
         POST, "setting/interval/get", "",
         response => response.text().then(interval => callback(parseFloat(interval)))
     );
+};
+
+
+/**
+ * Set interval now
+ * @param {number} interval - Interval
+ */
+export function setInterval(interval, callback = _ => {}) {
+    request(POST, "setting/interval/set", interval.toString() || interval, callback);
 };
 
 
@@ -90,5 +99,8 @@ export function postDev(onoff) {
  * @param {function} callback - Callback will be passed whether developer mode is enabled or not.
  */
 export function getDev(callback) {
-    request(POST, "setting/dev/get", "", result => callback(Boolean(Number(result))));
+    request(
+        POST, "setting/dev/get", "",
+        result => result.text().then(text => callback(Boolean(Number(text))))
+    );
 };

@@ -1,0 +1,89 @@
+{% extends "layout.html" %}
+{% block title %}Home{% endblock title %}
+{% block head %}{{ super() }}
+<script type="module">
+  import { getWallpapers, postWallpaper } from "./freedomwall/wallpapers.js";
+  import { getTemplates } from "./freedomwall/templates.js";
+  import {
+    startInteraction,
+    SILENT, afterReload
+  } from "./freedomwall/utils.js";
+
+  let original = window.onload;
+  window.onload = function () {
+    let languageSelect = document.getElementById("language");
+    let params = (new URL(location)).searchParams;;
+    startInteraction(
+      _ => {
+        if (params.get("wallpaper")) {
+          getTemplates(templates => {
+            // 追加可能な壁紙テンプレートをselectに追加する。
+            let select = document.getElementById("add-wallpapers");
+            var name = "";
+            for (let template of templates.map(window.escapeHTML)) {
+              select.innerHTML += `<option value="${template}">${template}</option>`;
+            };
+            getWallpapers(wallpapers => {
+              // 壁紙一覧を作る。
+              let ul = document.getElementById("wallpapers");
+              var name;
+              Object.keys(wallpapers).forEach(key => {
+                name = window.escapeHTML(key);
+                ul.innerHTML += `<li>
+                  <a href="./wallpapers.html?wallpaper=${name}">${name}</a>
+                </li>`;
+              });
+              original(true);
+            });
+          });
+        } else {
+          // 壁紙一つの設定画面の場合
+          document.getElementById("normal").hidden = true;
+          let div = document.getElementById("wallpaperSetting");
+          div.hidden = false;
+          getWallpapers(wallpapers => {
+            let name = params.get("wallpaper");
+            let wallpaper = wallpapers[name];
+            document.getElementById("wallpaperName").innerText = name;
+            div.innerHTML += `
+            `;
+
+            original(true);
+          });
+        };
+      }
+    );
+  };
+
+  window._addWallpaper = function (template) {
+    // 壁紙を追加する。
+    let input = document.getElementById("new-wallpaper-name");
+    postWallpaper(template, input.value || template);
+  };
+  window._postLanguage = postLanguage;
+</script>
+{% endblock head %}
+{% block content %}
+  <div id="normal">
+    <h1 id="subject">Setting</h1>
+    <div class="language ja">
+      ここでは使用する壁紙の登録と削除と編集をすることが可能です。
+    </div>
+    <div class="language en">
+      Here it is possible to register, delete and edit the wallpaper to be used.
+    </div>
+    <br>
+    <label for="add-wallpapers" class="language en">Add:</label>
+    <label for="add-wallpapers" class="language ja">追加：</label>
+    <input type="text" placeholder="Name | 名前" id="new-wallpaper-name"></input>
+    <select onchange="window._addWallpaper(this.value);" name="add-wallpapers" id="add-wallpapers">
+      <option value="..." selected>...</option>
+    </select>
+    <br>
+    <ul id="wallpapers">
+    </ul>
+  </div>
+  <div id="wallpaperSetting" hidden>
+    <h1 id="wallpaperName"></h1>
+  </div>
+{% endblock content %}

@@ -51,6 +51,7 @@ fn main() {
                     };
                 },
                 Event::UserEvent(UserEvents::ChangeInterval(interval)) => {
+                    println!("Change interval: {}", interval);
                     update_interval = Duration::from_secs_f32(interval);
                 },
                 Event::UserEvent(UserEvents::Request(request)) => {

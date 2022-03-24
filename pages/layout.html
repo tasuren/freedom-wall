@@ -17,21 +17,27 @@
   </script>
   <script type="module">
     import { getLanguage } from "./freedomwall/setting.js";
+    import { endInteraction } from "./freedomwall/utils.js";
 
     // ローディング表示の切り替えをする関数達です。
+    let toggleScrollable = function (open) {
+      document.getElementsByTagName("body")[0].style.overflow = open ? "hidden" : "auto";
+    };
     window.loadingShow = function () {
       let overlay = document.getElementById("fullOverlay");
+      toggleScrollable(true);
       overlay.style.display = "block";
       overlay.style.setProperty("z-index", 2147483647);
     };
     window.loadingHide = function () {
       let overlay = document.getElementById("fullOverlay");
+      toggleScrollable(false);
       overlay.style.display = "none";
       overlay.style.setProperty("z-index", -1);
     };
 
     let beforeWindowOnLoad = window.onload;
-    window.onload = function () {
+    window.onload = function (isEndInteraction = false) {
       // 違う言語は削除する。
       getLanguage(language => {
         console.log(language);
@@ -41,6 +47,7 @@
           };
         };
         window.loadingHide();
+        if (isEndInteraction) { endInteraction(); };
       }, 10);
       if (beforeWindowOnLoad) { beforeWindowOnLoad(); };
     };
@@ -53,7 +60,7 @@
   </script>
   {% endblock head %}
 </head>
-<body>
+<body style="overflow: hidden;">
   <div id="fullOverlay">
     <div class="text">Now loading...</div>
   </div>

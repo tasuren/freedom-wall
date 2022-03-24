@@ -14,7 +14,7 @@ fn main_of_main() {
             ::std::process::exit(1);
         }
     };
-    for name in vec!["home.html", "setting.html"] {
+    for name in vec!["home.html", "setting.html", "wallpapers.html"] {
         let mut f = File::create(format!("pages/_{}", name)).unwrap();
         f.write_all(
             tera.render(name, &Context::new())

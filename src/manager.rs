@@ -357,6 +357,22 @@ impl Manager {
                                 ));
                                 OK
                             } else { Err("Failed to parse value.".to_string()) }
+                        } else if path[2] == "set" {
+                            // 今すぐインターバルを設定する。
+                            if data == "setting" {
+                                let _ = self.proxy.send_event(UserEvents::ChangeInterval(
+                                    self.data.general.updateInterval
+                                ));
+                                OK
+                            } else {
+                                match data.parse() {
+                                    Ok(value) => {
+                                        let _ = self.proxy.send_event(UserEvents::ChangeInterval(value));
+                                        OK
+                                    },
+                                    _ => Err("Failed to parse value.".to_string())
+                                }
+                            }
                         } else { Ok(self.data.general.updateInterval.to_string()) }
                     },
                     "dev" => {
@@ -378,7 +394,7 @@ impl Manager {
                         if is_update {
                             let data: Vec<&str> = data.split("?").collect();
                             match self.data.add_wallpaper(
-                                data[0].to_string(), data[2].to_string()
+                                data[0].to_string(), data[1].to_string()
                             ) {
                                 Err(message) => Err(message), _ => OK
                             }

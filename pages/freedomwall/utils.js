@@ -1,5 +1,8 @@
 //! FreedomWall.js - Utils
 
+import { setInterval } from "./setting.js";
+
+
 export const alertThrow = true;
 export const afterReload = true;
 export const SILENT = () => {};
@@ -42,7 +45,10 @@ export function request(method, endpoint, body, callback, interval=1000, reload=
                                             throw text;
                                         });
                                     else callback(response);
-                                    if (doReload) location.reload();
+                                    if (doReload) {
+                                        scrollTo(0, 0);
+                                        location.reload();
+                                    };
                                 };
                             })
                     };
@@ -51,3 +57,7 @@ export function request(method, endpoint, body, callback, interval=1000, reload=
             };
         });
 };
+
+
+export function startInteraction(callback) { setInterval(0.001, callback); };
+export function endInteraction() { setInterval("setting"); };
