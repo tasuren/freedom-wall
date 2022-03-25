@@ -180,8 +180,7 @@ fn search_files<F: Fn(String, &PathBuf, &str, &String) -> ()>(
                             .filter(|x| !ok.contains(x))
                             .map(|x| x.to_string())
                             .collect::<Vec<String>>().join("`, `")
-                        )
-                    );
+                    ));
                 };
             } else {
                 return Err(failed_read(path_string.to_string()))

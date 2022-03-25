@@ -14,6 +14,7 @@ use wry::{
     http::{ Request, ResponseBuilder, Response },
     Error
 };
+use native_dialog::FileDialog;
 use serde_json::{ to_string, from_str };
 use url::Url;
 use rust_i18n::{ t, set_locale };
@@ -60,9 +61,9 @@ pub enum UserEvents {
 /// リクエストから適切なファイルを探し出しそれを返します。
 fn request2response(uri: &str) -> Result<Response, Error> {
     if let Ok(url) = Url::parse(uri) {
-        if let Ok(path) = if uri.starts_with("wry://pages") {
-            Ok(PathBuf::from(format!("./{}", uri.replace("wry://", ""))))
-        } else { url.to_file_path() } {
+        if let Ok(path) = if uri.starts_with("wry://pages/") {
+            Ok(PathBuf::from(format!("pages/{}", url.path())))
+         } else { url.to_file_path() } {
             let test;
             return ResponseBuilder::new()
                 .mimetype(
@@ -443,6 +444,16 @@ impl Manager {
             "gettext" => {
                 // gettext/<text>/get
                 Ok(t!(path[2]))
+            },
+            "open" => {
+                // open/.../...
+                // ファイル選択
+                println!("a");
+                match FileDialog::new()
+                        .show_open_single_file().unwrap() {
+                    Some(path) => Ok(path.to_str().unwrap().to_string()),
+                    _ => Err(t!("core.setting.failedRead"))
+                }
             },
             _ => NOTFOUND
         };

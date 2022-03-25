@@ -16,7 +16,7 @@ export const POST = "POST";
  * @param {Object} body - Data to be sent.
  * @param {function(Response)} callback - response will be passed to this.
  */
-export function request(method, endpoint, body, callback, interval=1000, reload=true) {
+export function request(method, endpoint, body, callback, interval=10, reload=true) {
     if (endpoint.indexOf("reply") !== -1) {
         throw "This endpoint is not available.";
     };
@@ -61,3 +61,12 @@ export function request(method, endpoint, body, callback, interval=1000, reload=
 
 export function startInteraction(callback) { setInterval(0.001, callback); };
 export function endInteraction() { setInterval("setting"); };
+
+
+/**
+ * Open file dialog
+ * @param {function} callback - Callback to be passed path
+ */
+export function open(callback) {
+    request(POST, "open/.../...", "", response => { response.text().then(callback); }, 10, false);
+};

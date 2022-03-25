@@ -2,10 +2,10 @@
 {% block title %}Home{% endblock title %}
 {% block head %}{{ super() }}
 <script type="module">
-  import { getWallpapers, postWallpaper } from "./freedomwall/wallpapers.js";
+  import { getWallpapers, postWallpaper, updateWallpaper } from "./freedomwall/wallpapers.js";
   import { getTemplates } from "./freedomwall/templates.js";
   import {
-    startInteraction,
+    startInteraction, open,
     SILENT, afterReload
   } from "./freedomwall/utils.js";
 
@@ -16,6 +16,59 @@
     startInteraction(
       _ => {
         if (params.get("wallpaper")) {
+          // 壁紙一つの設定画面の場合
+          document.getElementById("normal").hidden = true;
+          let div = document.getElementById("wallpaperSetting");
+          div.hidden = false;
+          getWallpapers(wallpapers => {
+            let name = params.get("wallpaper");
+            let wallpaper = wallpapers[name];
+            document.getElementById("wallpaperName").innerText = name;
+            let escapedName = window.escapeHTML(name);
+            div.innerHTML += `
+              <label for="wallpaperName" class="language ja">名前</label>
+              <label for="wallpaperName" class="language en">Name</label>
+              <br>
+              <input type="text" name="wallpaperName" data-name="name" class="wallpaperSetting" value="${escapedName}"></input>
+              <br>
+              <label for="wallpaperAuthor" class="language ja">作者</label>
+              <label for="wallpaperAuthor" class="language en">Author</label>
+              <br>
+              <input type="text" class="wallpaperSetting" id="wallpaperAuthor" data-name="author" name="wallpaperAuthor" value="${window.escapeHTML(wallpaper.author)}">
+              <br>
+              <label for="wallpaperDescription" class="language ja">説明</label>
+              <label for="wallpaperDescription" class="language en">Description</label>
+              <br>
+              <textarea class="wallpaperSetting" data-name="description" id="wallpaperDescription" name="wallpaperDescription">${window.escapeHTML(wallpaper.description)}</textarea>
+              <br>
+              <label for="wallpaperSetting" class="language ja">設定</label>
+              <label for="wallpaperSetting" class="language en">Setting</label>
+              <br>
+              <div name="wallpaperSetting">
+                ${Object.keys(wallpaper.setting).map(key => {
+                  let name = window.escapeHTML(wallpaper.setting[key]);
+                  return `
+                    <label for="wallpaperSetting-${name}"></label>
+                    <input type="text" name="wallpaperSetting-${name}" id="wallpaperSetting-${name}" data-name="setting" value="${name}"></input>
+                    ${key.endsWith("path") ? `<button type="button" class="wallpaperSetting settingDetail" name="${name}" onclick="window._open(this.name);">Select</button>` : ""}
+                  `;
+                })}
+              </div>
+              <br>
+              <label for="wallpaperForceSize" class="language ja">サイズ強制</label>
+              <label for="wallpaperForceSize" class="language en">Force adjustment size</label>
+              <br>
+              <input type="checkbox" class="wallpaperSetting" data-name="forceSize" name="wallpaperForceSize"${wallpaper.forceSize ? " checked" : ""}></input>
+              <br>
+              <button type="button" onclick="window._save("${escapedName}");" class="language ja">保存</button>
+              <button type="button" onclick="window._save("${escapedName}");" class="language en">Save</button>
+              <button type="button" onclick="window._remove("${escapedName}");" class="language ja">削除</button>
+              <button type="button" onclick="window._remove("${escapedName}");" class="language en">Delete</button>
+            `;
+
+            original(true);
+          });
+        } else {
           getTemplates(templates => {
             // 追加可能な壁紙テンプレートをselectに追加する。
             let select = document.getElementById("add-wallpapers");
@@ -30,25 +83,11 @@
               Object.keys(wallpapers).forEach(key => {
                 name = window.escapeHTML(key);
                 ul.innerHTML += `<li>
-                  <a href="./wallpapers.html?wallpaper=${name}">${name}</a>
+                  <a href="./_wallpapers.html?wallpaper=${name}">${name}</a>
                 </li>`;
               });
               original(true);
             });
-          });
-        } else {
-          // 壁紙一つの設定画面の場合
-          document.getElementById("normal").hidden = true;
-          let div = document.getElementById("wallpaperSetting");
-          div.hidden = false;
-          getWallpapers(wallpapers => {
-            let name = params.get("wallpaper");
-            let wallpaper = wallpapers[name];
-            document.getElementById("wallpaperName").innerText = name;
-            div.innerHTML += `
-            `;
-
-            original(true);
           });
         };
       }
@@ -60,7 +99,35 @@
     let input = document.getElementById("new-wallpaper-name");
     postWallpaper(template, input.value || template);
   };
-  window._postLanguage = postLanguage;
+
+  window._open = function (name) {
+    // ファイルパスを取得する。
+    window.loadingShow();
+    open(path => {
+      document.getElementById(`wallpaperSetting-${name}`)
+        .value = path;
+      window.loadingHide();
+    });
+  };
+
+  window._save = function (name) {
+    // セーブ
+    data = {};
+    callback = null;
+    for (let element of Document.getElementsByClassName("wallpaperSetting")) {
+      let key = element.getAttribute("data-name");
+      if (key == "setting") {
+        if (Object.keys(data).indexOf("setting") !== -1) data.setting = {};
+        data.setting[element.name] = element.value;
+      } else if (key == "name")
+        callback = (_) => updateWallpaper(name, element.value, "rename")
+      else data[key] = element.value;
+    };
+    updateWallpaper(name, data, "update", callback || ((_) => {}), !Boolean(callback));
+  };
+
+  // 削除
+  window._remove = (name) => updateWallpaper(name, null, "remove");
 </script>
 {% endblock head %}
 {% block content %}
