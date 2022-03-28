@@ -381,7 +381,7 @@ impl DataManager {
                     .expect(FAILED_JSON)
             )?;
             Ok(())
-        } else { Err(t!("core.setting.readFailed", path=&name)) }
+        } else { Err(t!("core.setting.failedRead", path=&name)) }
     }
 
     /// インデックス番号から壁紙プロファイルを取得します。
@@ -435,7 +435,7 @@ impl DataManager {
                                 name: name, path: path, detail: wallpaper
                             });
                             Ok(())
-                        } else { Err(t!("core.setting.readFailed", path="data.json")) }
+                        } else { Err(t!("core.setting.failedRead", path="data.json")) }
                     },
                     _ => Err(t!("core.setting.mkdirFailed", path=&path))
                 }

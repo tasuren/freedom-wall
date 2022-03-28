@@ -12,7 +12,7 @@
   let original = window.onload;
   window.onload = function () {
     let languageSelect = document.getElementById("language");
-    let params = (new URL(location)).searchParams;;
+    let params = (new URL(location)).searchParams;
     startInteraction(
       _ => {
         if (params.get("wallpaper")) {
@@ -54,16 +54,15 @@
                   `;
                 })}
               </div>
-              <br>
               <label for="wallpaperForceSize" class="language ja">サイズ強制</label>
               <label for="wallpaperForceSize" class="language en">Force adjustment size</label>
               <br>
               <input type="checkbox" class="wallpaperSetting" data-name="forceSize" name="wallpaperForceSize"${wallpaper.forceSize ? " checked" : ""}></input>
-              <br>
-              <button type="button" onclick="window._save("${escapedName}");" class="language ja">保存</button>
-              <button type="button" onclick="window._save("${escapedName}");" class="language en">Save</button>
-              <button type="button" onclick="window._remove("${escapedName}");" class="language ja">削除</button>
-              <button type="button" onclick="window._remove("${escapedName}");" class="language en">Delete</button>
+              <br><br>
+              <button type="button" onclick="window._save('${escapedName}');" class="language ja">保存</button>
+              <button type="button" onclick="window._save('${escapedName}');" class="language en">Save</button>
+              <button type="button" onclick="window._remove('${escapedName}');" class="language ja">削除</button>
+              <button type="button" onclick="window._remove('${escapedName}');" class="language en">Delete</button>
             `;
 
             original(true);

@@ -1,7 +1,7 @@
 //! FreedomWall - Manager
 
 use std::{
-    path::PathBuf, fs::{ canonicalize, read },
+    path::PathBuf, fs::{ canonicalize, read }, thread,
     collections::HashMap, rc::Rc, cell::{ RefCell, RefMut }
 };
 
@@ -34,6 +34,7 @@ pub struct Manager {
     pub proxy: EventLoopProxy<UserEvents>,
     pub queues: Rc<RefCell<Vec<Queue>>>,
     pub is_setting: bool
+    pub file_dialog: Option<thread::JoinHandle>
 }
 
 
@@ -135,7 +136,7 @@ impl Manager {
         let mut manager = Self {
             windows: Vec::new(), data: data, setting: None,
             proxy: proxy, queues: Rc::new(RefCell::new(Vec::new())),
-            is_setting: false
+            is_setting: false, file_dialog: None
         };
         manager.setting = Some(manager.make_setting_window(event_loop));
         Ok(manager)
@@ -297,8 +298,11 @@ impl Manager {
         let path: Vec<&str> = tentative_path.split("/").collect();
         let error = RefCell::new("Not found".to_string());
         let borrowed = error.borrow();
-        let make_error = || Queue {
-            status: 400, body: borrowed.bytes().collect()
+        let make_error = |body: Option<String>| Queue {
+            status: 400, body: match body {
+                Some(value) => value.bytes().collect(),
+                _ => borrowed.bytes().collect()
+            }
         };
 
         /* 以下は将来性を考慮してでのコメントアウトです。
@@ -308,7 +312,7 @@ impl Manager {
         */
 
         let length = path.len();
-        if length < 3 { return make_error(); };
+        if length < 3 { return make_error(None); };
         let (OK, NOTFOUND) = (
             Ok("Ok".to_string()), Err("Not found".to_string())
         );
@@ -459,7 +463,7 @@ impl Manager {
         };
 
         // もしデータ書き込みが必要なら書き込む。
-        if is_update && !write_mode.is_empty(){
+        if is_update && !write_mode.is_empty() {
             match write_mode {
                 "general" => self.data.write_setting(),
                 _ => Err("The world is revolving!".to_string())
@@ -467,10 +471,9 @@ impl Manager {
         };
 
         // レスポンスデータをまとめる。
-        if let Ok(response_data) = tentative {
-            return Queue { status: 200, body: response_data.bytes().collect() };
-        } else { *error.borrow_mut() = tentative.err().unwrap() };
-
-        make_error()
+        match tentative {
+            Ok(response_data) => Queue { status: 200, body: response_data.bytes().collect() },
+            _ => make_error(Some(tentative.err().unwrap()))
+        }
     }
 }

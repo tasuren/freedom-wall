@@ -16,7 +16,7 @@ export const POST = "POST";
  * @param {Object} body - Data to be sent.
  * @param {function(Response)} callback - response will be passed to this.
  */
-export function request(method, endpoint, body, callback, interval=10, reload=true) {
+export function request(method, endpoint, body, callback, interval=10, reload=true, doAlert=true) {
     if (endpoint.indexOf("reply") !== -1) {
         throw "This endpoint is not available.";
     };
@@ -42,7 +42,10 @@ export function request(method, endpoint, body, callback, interval=10, reload=tr
                                     if (response.status == 400 || response.status == 404)
                                         response.text().then(text => {
                                             if (alertThrow) { alert(text); };
-                                            throw text;
+                                            if (doAlert) {
+                                                window.loadingSetText(`Error:\n${text}`);
+                                                window.loadingShow();
+                                            } else throw text;
                                         });
                                     else callback(response);
                                     if (doReload) {
