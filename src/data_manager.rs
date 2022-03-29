@@ -2,7 +2,7 @@
 
 use std::{
     collections::HashMap, env::args, path::{ Path, PathBuf },
-    ffi::OsStr, fs::{ File, read_to_string, create_dir, rename, copy, remove_dir },
+    ffi::OsStr, fs::{ File, read_to_string, create_dir, rename, copy, remove_dir_all },
     io::Write, cell::RefCell
 };
 
@@ -362,7 +362,7 @@ impl DataManager {
         Ok(&self.extensions)
     }
 
-    /// 拡張機能のデータを読み込みます。
+    /// 拡張機能のデータを取得します。
     pub fn get_extensions(&self, name: &str) -> Option<&Extension> {
         for extension in self.extensions.iter() {
             if &extension.name == name {
@@ -403,14 +403,18 @@ impl DataManager {
     }
 
     /// 壁紙プロファイルを削除します。
-    pub fn remove_wallpaper(&self, index: usize) -> Result<(), String> {
+    pub fn remove_wallpaper(&mut self, index: usize) -> Result<(), String> {
         let wallpaper = self.get_wallpaper_by_index(index)?;
-        match remove_dir(wallpaper.path.clone()) {
-            Ok(_) => Ok(()), _ => Err(t!("core.setting.removeDirFailed"))
+        match remove_dir_all(wallpaper.path.clone()) {
+            Ok(_) => { self.wallpapers.remove(index); Ok(()) },
+            _ => Err(format!(
+                "{}\nDetail: {}",
+                t!("core.setting.removeDirFailed"), wallpaper.path
+            ))
         }
     }
 
-    /// 壁紙プロファイルを追加します。
+    /// テンプレートから壁紙プロファイルを追加して書き込みをします。
     pub fn add_wallpaper(&mut self, template: String, name: String) -> Result<(), String> {
         if self.templates.contains(&template) {
             if self.get_wallpaper(&name).is_none() {
@@ -469,13 +473,25 @@ impl DataManager {
             for wallpaper in self.wallpapers.iter_mut() {
                 if wallpaper.name == before {
                     wallpaper.name = after.to_string();
+                    let path = add_setting_path(&format!("wallpapers/{}", after))?;
                     if rename(
-                        wallpaper.path.to_string(),
-                        add_setting_path(&format!("wallpapers/{}", after))?
+                        wallpaper.path.to_string(), &path
                     ).is_err() { return Err(t!("core.setting.renameFailed")); };
+                    wallpaper.path = path;
                 };
             };
             Ok(())
         } else { Err(t!("core.general.findAppropriateWallpaperFailed", name=before)) }
+    }
+
+    /// 壁紙設定を取得ます。
+    pub fn get_wallpaper_setting(&self, name: &str) -> Vec<(usize, &Target)> {
+        let mut data = Vec::new();
+        for (index, target) in self.general.wallpapers.iter().enumerate() {
+            if target.wallpaper == name {
+                data.push((index, target));
+            };
+        };
+        data
     }
 }

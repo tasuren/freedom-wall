@@ -10,82 +10,75 @@
     getDev, postDev
   } from "./freedomwall/setting.js";
   import { getWallpapers } from "./freedomwall/wallpapers.js";
-  import {
-    startInteraction,
-    SILENT, afterReload
-  } from "./freedomwall/utils.js";
+  import { SILENT } from "./freedomwall/utils.js";
   window._postDev = postDev;
 
   let original = window.onload;
   window.onload = function () {
     let languageSelect = document.getElementById("language");
-    startInteraction(
-      _ => {
-        // 言語設定を現在設定されているものにセレクトしておく。
-        getLanguage(language => {
-          for (let element of languageSelect.getElementsByTagName("option")) {
-            if (element.value == language) {
-              element.selected = true;
-            };
+    // 言語設定を現在設定されているものにセレクトしておく。
+    getLanguage(language => {
+      for (let element of languageSelect.getElementsByTagName("option")) {
+        if (element.value == language) {
+          element.selected = true;
+        };
+      };
+
+      // 使用可能な壁紙を追加する。
+      getWallpapers(wallpapers => {
+        let select = document.getElementById("add-wallpapers");
+
+        Object.keys(wallpapers).forEach(key => {
+          select.innerHTML += `<option value="${key}">${key}</option>`;
+        });
+
+        getTargets(targets => {
+          let table = document.getElementById("wallpapers");
+
+          window._addWallpaper = function (name) {
+            targets.push({targets: ["nothing"], exceptions: [], alpha: 0.2, wallpaper: name});
+            postTargets(targets);
           };
 
-          // 使用可能な壁紙を追加する。
-          getWallpapers(wallpapers => {
-            let select = document.getElementById("add-wallpapers");
+          window.editTargetFunctions = {};
 
-            Object.keys(wallpapers).forEach(key => {
-              select.innerHTML += `<option value="${key}">${key}</option>`;
-            });
+          for (let index in targets) {
+            let target = targets[index];
+            let name = window.escapeHTML(target.wallpaper);
+            window.editTargetFunctions[index] = function (uindex) {
+              let rawTargets = document.getElementById(`${uindex}-targets`).value;
+              targets[uindex].targets = rawTargets.split(",");
+              let exceptions = document.getElementById(`${uindex}-exceptions`).value;
+              targets[uindex].exceptions = exceptions ? exceptions.split(",") : [];
+              targets[uindex].alpha = Number(document.getElementById(`${uindex}-alpha`).value);
+              if (!rawTargets) targets.splice(uindex, 1);
+              postTargets(targets);
+            };
+            table.innerHTML += `<tr>
+              <td>${name}</td>
+              <td><input id="${index}-targets" type="text" value="${window.escapeHTML(target.targets.join(","))}"></input></td>
+              <td><input id="${index}-exceptions" type="text" value="${window.escapeHTML(target.exceptions.join(","))}"></input></td>
+              <td><input id="${index}-alpha" min="0.0" max="1.0" step="0.05" type="number" value="${target.alpha}"></input></td>
+              <td><button type="button" name="${index}" onclick="window.editTargetFunctions[this.name](${index});">Save</button></td>
+            </tr>`;
+          };
 
-            getTargets(targets => {
-              let table = document.getElementById("wallpapers");
-
-              window._addWallpaper = function (name) {
-                targets.push({targets: ["nothing"], exceptions: [], alpha: 0.2, wallpaper: name});
-                postTargets(targets);
-              };
-
-              window.editTargetFunctions = {};
-
-              for (let index in targets) {
-                let target = targets[index];
-                let name = window.escapeHTML(target.wallpaper);
-                window.editTargetFunctions[index] = function (uindex) {
-                  let rawTargets = document.getElementById(`${uindex}-targets`).value;
-                  targets[uindex].targets = rawTargets.split(",");
-                  let exceptions = document.getElementById(`${uindex}-exceptions`).value;
-                  targets[uindex].exceptions = exceptions ? exceptions.split(",") : [];
-                  targets[uindex].alpha = Number(document.getElementById(`${uindex}-alpha`).value);
-                  if (!rawTargets) targets.splice(uindex, 1);
-                  postTargets(targets);
-                };
-                table.innerHTML += `<tr>
-                  <td>${name}</td>
-                  <td><input id="${index}-targets" type="text" value="${window.escapeHTML(target.targets.join(","))}"></input></td>
-                  <td><input id="${index}-exceptions" type="text" value="${window.escapeHTML(target.exceptions.join(","))}"></input></td>
-                  <td><input id="${index}-alpha" min="0.0" max="1.0" step="0.05" type="number" value="${target.alpha}"></input></td>
-                  <td><button type="button" name="${index}" onclick="window.editTargetFunctions[this.name](${index});">Save</button></td>
-                </tr>`;
-              };
-
-              getInterval(interval => {
-                // インターバル設定
-                let intervalInput = document.getElementById("interval");
-                intervalInput.value = interval;
-                window._postInterval = function () {
-                  postInterval(Number(intervalInput.value));
-                };
-                getDev(mode => {
-                  // 開発者モード
-                  document.getElementById("devMode").checked = mode;
-                  original(true);
-                });
-              });
+          getInterval(interval => {
+            // インターバル設定
+            let intervalInput = document.getElementById("interval");
+            intervalInput.value = interval;
+            window._postInterval = function () {
+              postInterval(Number(intervalInput.value));
+            };
+            getDev(mode => {
+              // 開発者モード
+              document.getElementById("devMode").checked = mode;
+              original();
             });
           });
         });
-      }
-    );
+      });
+    });
   };
   window._postLanguage = postLanguage;
 </script>
@@ -140,7 +133,7 @@
   </div><br>
   <input type="number" step="0.01" id="interval" min="0" max="5" value=""></input>
   <button type="button" id="saveInterval" onclick="window._postInterval();">Save</button>
-  <h3 class="language en">Developer mode</h3>
-  <h3 class="language ja">開発者モード</h3>
+  <h3 class="language en">Developer mode (Reboot required)</h3>
+  <h3 class="language ja">開発者モード (再起動必須)</h3>
   <input type="checkbox" id="devMode" onclick="window._postDev(this.checked);"></input>
 {% endblock content %}

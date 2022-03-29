@@ -7,9 +7,10 @@
   <meta name="description" content="FreedomWallの壁紙表示用のWebページです。">
   <meta name="author" content="tasuren">
   <script>
-    const URL = new URL(window.location.origin);
-    const PARAMS = new URLSearchParams(url.search);
-    document.getElementById("background").setAttribute("src", PARAMS[0][1]);
+    window.addEventListener("load", function () {
+      const PARAMS = (new URL(location)).searchParams;
+      document.getElementById("background").setAttribute("src", PARAMS.get("imagePath"));
+    });
   </script>
 <body>
   <div id="background-container">

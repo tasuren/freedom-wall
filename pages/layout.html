@@ -17,7 +17,6 @@
   </script>
   <script type="module">
     import { getLanguage } from "./freedomwall/setting.js";
-    import { endInteraction } from "./freedomwall/utils.js";
 
     // ローディング表示の切り替えをする関数達です。
     let toggleScrollable = function (open) {
@@ -40,7 +39,7 @@
     };
 
     let beforeWindowOnLoad = window.onload;
-    window.onload = function (isEndInteraction = false) {
+    window.onload = function () {
       // 違う言語は削除する。
       getLanguage(language => {
         console.log(language);
@@ -50,7 +49,6 @@
           };
         };
         window.loadingHide();
-        if (isEndInteraction) { endInteraction(); };
       }, 10);
       if (beforeWindowOnLoad) { beforeWindowOnLoad(); };
     };

@@ -1,7 +1,8 @@
 //! FreedomWall - Manager
 
 use std::{
-    path::PathBuf, fs::{ canonicalize, read }, thread,
+    path::PathBuf, fs::{ canonicalize, read }, time::Duration, thread,
+    sync::mpsc::{ channel, Sender },
     collections::HashMap, rc::Rc, cell::{ RefCell, RefMut }
 };
 
@@ -14,15 +15,16 @@ use wry::{
     http::{ Request, ResponseBuilder, Response },
     Error
 };
-use native_dialog::FileDialog;
+use rfd::FileDialog;
 use serde_json::{ to_string, from_str };
 use url::Url;
+use urlencoding::decode;
 use rust_i18n::{ t, set_locale };
 
 use super::{
     window::{ Window, WindowTrait },
     data_manager::{ DataManager, Wallpaper, WallpaperJson, Target },
-    platform::get_windows, APPLICATION_NAME
+    platform::get_windows, APPLICATION_NAME, utils
 };
 
 
@@ -33,8 +35,10 @@ pub struct Manager {
     pub setting: Option<WebView>,
     pub proxy: EventLoopProxy<UserEvents>,
     pub queues: Rc<RefCell<Vec<Queue>>>,
-    pub is_setting: bool
-    pub file_dialog: Option<thread::JoinHandle>
+    pub is_setting: bool,
+    pub file_dialog: Option<thread::JoinHandle<()>>,
+    pub heartbeat_sender: Sender<f32>,
+    pub heartbeat: Option<thread::JoinHandle<()>>
 }
 
 
@@ -55,7 +59,8 @@ pub struct RequestData {
 /// レスポンスを入れてmain.rsにて実行するのに使うユーザーイベントの列挙型です。
 pub enum UserEvents {
     Request(RequestData),
-    ChangeInterval(f32)
+    FileSelected(String),
+    PassedInterval()
 }
 
 
@@ -133,12 +138,28 @@ impl Manager {
         let data = DataManager::new()?;
         // 言語設定を適用させる。
         set_locale(&data.general.language);
+        let (tx, rx) = channel();
         let mut manager = Self {
-            windows: Vec::new(), data: data, setting: None,
-            proxy: proxy, queues: Rc::new(RefCell::new(Vec::new())),
-            is_setting: false, file_dialog: None
+            windows: Vec::new(), data: data, setting: None, proxy: proxy,
+            queues: Rc::new(RefCell::new(Vec::new())), is_setting: false,
+            file_dialog: None, heartbeat_sender: tx, heartbeat: None
         };
+        // 設定画面のウィンドウを作る。
         manager.setting = Some(manager.make_setting_window(event_loop));
+        // 定期的にイベントを呼び出すためのスレッドを動かす。
+        let cloned_proxy = manager.proxy.clone();
+        let mut cloned_interval = Duration::from_secs_f32(manager.data.general.updateInterval);
+        manager.heartbeat = Some(thread::spawn(move || {
+            loop {
+                if let Ok(new) = rx.recv_timeout(cloned_interval) {
+                    cloned_interval = Duration::from_secs_f32(new);
+                    thread::sleep(cloned_interval);
+                };
+                if cloned_proxy.send_event(UserEvents::PassedInterval()).is_err() {
+                    break;
+                };
+            };
+        }));
         Ok(manager)
     }
 
@@ -172,7 +193,7 @@ impl Manager {
             .build(event_loop).expect("Failed to build the window.");
         match &Url::parse_with_params(
             &format!("wry://{}", format!("{}/index.html", &data.path)),
-            &data.detail.setting
+            &data.detail.setting,
         ) {
             Ok(url) => {
                 let proxy = self.proxy.clone();
@@ -187,14 +208,13 @@ impl Manager {
                     .with_initialization_script(if data.detail.forceSize { r#"
                         // ウィンドウのサイズに壁紙のサイズを合わせるためのスクリプトを実行する。
                         let resize = function () {
-                        for (let element of document.getElementsByClassName("background")) {
-                            element.style.width = `${window.innerWidth}px`;
-                            element.style.height = `${window.innerHeight}px`;
+                            for (let element of document.getElementsByClassName("background")) {
+                                element.style.width = `${window.innerWidth}px`;
+                                element.style.height = `${window.innerHeight}px`;
+                            };
                         };
-                        };
-                        window.resize = resize;
-        
-                        let onload = function () {
+                        window.addEventListener('resize', resize);
+                        window.addEventListener('load', function (_) {
                             // 画面全体にHTMLが表示されるようにする。
                             document.getElementsByTagName("head")[0].innerHTML += `
                             <style type="text/css">
@@ -205,18 +225,19 @@ impl Manager {
                             body {
                                 overflow: hidden;
                             }
-                                #background {
+                            #background {
                                 object-fit: fill;
                             }
                             </style>
                             `;
                             resize();
-                        };
-                        window.onload = onload;"# } else { "" })
+                        });"# } else { "" })
                     .with_dev_tool(self.data.general.dev)
                     .build().expect("Failed to build the webview.");
-                self.windows.push(Window::new(data, webview, alpha, target));
-                Ok(())
+                let mut new = Window::new(data, webview, alpha, target);
+                new.set_click_through(!self.data.general.dev);
+                self.windows.push(new);
+            Ok(())
             }, _ => Err(t!("core.general.processQueryParameterFailed"))
         }
     }
@@ -268,6 +289,7 @@ impl Manager {
             if let Some(target) = make {
                 // もしまだ作っていない背景ウィンドウなら作る。
                 return if let Some(wallpaper) = self.data.get_wallpaper(&target.0) {
+                    println!("Add window: {}", target.2);
                     let _ = self.add(
                         event_loop, wallpaper.clone(), target.1, target.2.clone()
                     );
@@ -280,8 +302,9 @@ impl Manager {
 
         // もし既に存在していないアプリへの背景ウィンドウがあるなら必要ないので消す。
         if done.len() < self.windows.len() {
-            for index in 0..self.windows.len() {
+            for index in self.windows.len()..0 {
                 if !done.contains(&self.windows[index].webview.window().id()) {
+                    println!("Remove window: {}", self.windows[index].target);
                     self.windows.remove(index);
                 };
             };
@@ -293,8 +316,9 @@ impl Manager {
     /// APIリクエストを処理します。
     pub fn on_request(&mut self, uri: &str, data: String) -> Queue {
         // 色々整えたり下準備をする。
-        let tentative_path = uri.replace("wry://api/", "")
-            .replace("?", "/");
+        let tentative_path = decode(
+            &uri.replace("wry://api/", "").replace("?", "/")
+        ).unwrap().to_string();
         let path: Vec<&str> = tentative_path.split("/").collect();
         let error = RefCell::new("Not found".to_string());
         let borrowed = error.borrow();
@@ -305,7 +329,7 @@ impl Manager {
             }
         };
 
-        /* 以下は将来性を考慮してでのコメントアウトです。
+        /* 以下は使わないと言い切れないコードなのでコメントアウトをしています。
         let tentative_url = Url::parse(uri);
         if let Err(_) = tentative_url { return make_error(); };
         let url = tentative_url.unwrap();
@@ -318,6 +342,8 @@ impl Manager {
         );
         let mut write_mode = "";
         let is_update = path[2] == "update";
+
+        println!("Request: {} {}", uri, data);
 
         // リクエストを処理する。
         let tentative = match path[0] {
@@ -343,9 +369,7 @@ impl Manager {
                                     from_str::<Vec<Target>>(&data) {
                                 self.data.general.wallpapers = wallpapers;
                                 // 現在開かれている背景ウィンドウを消す。
-                                for _ in 0..self.windows.len() {
-                                    self.windows.pop();
-                                };
+                                self.windows = Vec::new();
                                 OK
                             } else { Err(t!("core.setting.loadJsonFailed")) }
                         } else {
@@ -357,27 +381,9 @@ impl Manager {
                         if is_update {
                             if let Ok(value) = data.parse() {
                                 self.data.general.updateInterval = value;
-                                let _ = self.proxy.send_event(UserEvents::ChangeInterval(
-                                    self.data.general.updateInterval
-                                ));
+                                self.heartbeat_sender.send(value,).unwrap();
                                 OK
                             } else { Err("Failed to parse value.".to_string()) }
-                        } else if path[2] == "set" {
-                            // 今すぐインターバルを設定する。
-                            if data == "setting" {
-                                let _ = self.proxy.send_event(UserEvents::ChangeInterval(
-                                    self.data.general.updateInterval
-                                ));
-                                OK
-                            } else {
-                                match data.parse() {
-                                    Ok(value) => {
-                                        let _ = self.proxy.send_event(UserEvents::ChangeInterval(value));
-                                        OK
-                                    },
-                                    _ => Err("Failed to parse value.".to_string())
-                                }
-                            }
                         } else { Ok(self.data.general.updateInterval.to_string()) }
                     },
                     "dev" => {
@@ -395,7 +401,7 @@ impl Manager {
                 // 壁紙リストの壁紙の設定
                 match path[1] {
                     "all" => {
-                        // 全ての壁紙を取得します。
+                        // 全ての壁紙を取得します。または指定された壁紙を追加します。
                         if is_update {
                             let data: Vec<&str> = data.split("?").collect();
                             match self.data.add_wallpaper(
@@ -415,17 +421,46 @@ impl Manager {
                     },
                     "one" => {
                         // 壁紙プロファイルの削除か更新
+                        // wallpapers/one/update/<name>/<subject>
                         if is_update && length >= 5 {
                             match self.data.get_wallpaper_index(path[3]) {
                                 Some(index) => {
-                                    if let Err(message) = if path[4] == "write" {
-                                        self.data.wallpapers[index].detail = from_str
-                                            ::<WallpaperJson>(&data).unwrap();
-                                        self.data.write_wallpaper(index)
+                                    match if path[4] == "write" {
+                                        match from_str::<WallpaperJson>(&data) {
+                                            Ok(value) => {
+                                                self.data.wallpapers[index].detail = value;
+                                                self.data.write_wallpaper(index)
+                                            },
+                                            Err(message) => Err(format!(
+                                                "{}\nDetail: {}",
+                                                t!("core.setting.loadJsonFailed"),
+                                                message.to_string()
+                                            ))
+                                        }
                                     } else {
-                                        self.data.wallpapers.remove(index);
                                         self.data.remove_wallpaper(index)
-                                    } { Err(message) } else { OK }
+                                    } {
+                                        Ok(_) => {
+                                            let mut update_queue = Vec::new();
+                                            for (index, _) in self.data.get_wallpaper_setting(path[3]) {
+                                                if path[4] == "remove" { update_queue.push(index); };
+                                            };
+
+                                            // 使われている壁紙設定を削除する。(削除時限定)
+                                            update_queue.sort(); update_queue.reverse();
+                                            for index in update_queue {
+                                                self.data.general.wallpapers.remove(index);
+                                            };
+                                            // ウィンドウをリセットする。
+                                            self.windows = Vec::new();
+
+                                            // データを書き込む。
+                                            match self.data.write_setting() {
+                                                Ok(_) => OK, Err(message) => Err(message)
+                                            }
+                                        },
+                                        Err(message) => Err(message)
+                                    }
                                 }, _ => NOTFOUND
                             }
                         } else { OK }
@@ -435,7 +470,26 @@ impl Manager {
                         if length >= 5 {
                             if let Err(message) = self.data.mv_wallpaper(path[3], path[4]) {
                                 Err(message)
-                            } else { OK }
+                            } else {
+                                // 既に使われているプロファイルの場合は再設定を行う。
+                                let mut update_queue = Vec::new();
+                                for (index, _) in self.data.get_wallpaper_setting(path[3]) {
+                                    update_queue.push(index);
+                                };
+                                update_queue.sort(); update_queue.reverse();
+                                for index in update_queue {
+                                    let mut before = self.data.general.wallpapers
+                                        .remove(index);
+                                    before.wallpaper = path[4].to_string();
+                                    self.data.general.wallpapers.push(before);
+                                };
+                                // ウィンドウをリセットする。
+                                self.windows = Vec::new();
+                                // 設定を書き込む。
+                                match self.data.write_setting() {
+                                    Ok(_) => OK, Err(message) => Err(message)
+                                }
+                            }
                         } else { OK }
                     }, _ => NOTFOUND
                 }
@@ -452,12 +506,15 @@ impl Manager {
             "open" => {
                 // open/.../...
                 // ファイル選択
-                println!("a");
-                match FileDialog::new()
-                        .show_open_single_file().unwrap() {
-                    Some(path) => Ok(path.to_str().unwrap().to_string()),
-                    _ => Err(t!("core.setting.failedRead"))
-                }
+                let cloned = self.proxy.clone();
+                self.file_dialog = Some(thread::spawn(move || {
+                    let _ = cloned.send_event(UserEvents::FileSelected(match FileDialog::new().pick_file() {
+                        Some(path) => path.to_str().unwrap().to_string(),
+                        _ => { utils::error(&t!("core.setting.failedRead")); panic!("Error occurred."); }
+                    }));
+                    ()
+                }));
+                OK
             },
             _ => NOTFOUND
         };

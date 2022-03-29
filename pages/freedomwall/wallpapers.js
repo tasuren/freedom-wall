@@ -44,12 +44,12 @@ export function updateWallpaper(name, data, mode, callback=SILENT, reload=true) 
     if (mode == "rename") {
         request(
             POST, `wallpapers/rename/update/${replaceSlash(name)}/${replaceSlash(data)}`,
-            "", callback, reload=reload
+            "", callback, 10, reload
         )
     } else {
         request(
             POST, `wallpapers/one/update/${replaceSlash(name)}/${mode}`,
-            data ? JSON.stringify(data) : "", callback, reload=reload
+            data ? JSON.stringify(data) : "", callback, 10, reload
         );
     };
 };

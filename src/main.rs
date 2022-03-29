@@ -1,7 +1,5 @@
 //! FreedomWall by tasuren
 
-use std::time::{ Instant, Duration };
-
 use wry::{
     application::{
         event::{ Event, StartCause, WindowEvent },
@@ -34,25 +32,27 @@ fn main() {
         error(&text);
     } else {
         let mut manager = manager_option.unwrap();
-        let mut update_interval = Duration::from_secs_f32(manager.data.general.updateInterval);
 
         event_loop.run(move |event, event_loop_target, control_flow| {
+            *control_flow = ControlFlow::Wait;
+
             match event {
                 Event::NewEvents(StartCause::Init) => {
                     println!("FreedomWall {} by tasuren", VERSION);
-                    *control_flow = ControlFlow::WaitUntil(Instant::now() + update_interval);
                 },
-                Event::NewEvents(StartCause::ResumeTimeReached { .. }) => {
-                    *control_flow = ControlFlow::WaitUntil(Instant::now() + update_interval);
+                Event::UserEvent(UserEvents::PassedInterval()) => {
                     // 背景ウィンドウの場所を調整したりする。
                     if let Err(message) = manager.process_windows(&event_loop_target) {
                         println!("Error while process_windows: {}", message);
                         *control_flow = ControlFlow::Exit;
                     };
                 },
-                Event::UserEvent(UserEvents::ChangeInterval(interval)) => {
-                    println!("Change interval: {}", interval);
-                    update_interval = Duration::from_secs_f32(interval);
+                Event::UserEvent(UserEvents::FileSelected(path)) => {
+                    // ファイルダイアログによりファイルが選択された場合はJavaScriptのコールバックを呼び出してWebViewにパスを渡す。
+                    manager.setting.as_ref().unwrap().evaluate_script(&format!(
+                        "window._fileSelected(`{}`)", path.replace("`", "\\`")
+                    )).unwrap();
+                    manager.file_dialog = None;
                 },
                 Event::UserEvent(UserEvents::Request(request)) => {
                     // APIリクエストを処理する。ここでやらなければエラーが起きてしまう。理由は`manager.rs`にて記述済み。

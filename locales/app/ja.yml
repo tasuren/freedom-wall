@@ -14,5 +14,5 @@ ja:
   core.setting.loadJsonFailed: JSONの読み込みに失敗しました。
   core.setting.mkdirFailed: "%{path}のフォルダの作成に失敗しました。"
   core.setting.notAppropriateLanguage: 適切な言語が見つかりませんでした。
-  core.setting.removeDirFailed: フォルダの作成に失敗しました。
+  core.setting.removeDirFailed: フォルダの削除に失敗しました。
   core.setting.renameFailed: 名前変更に失敗しました。

@@ -3,8 +3,6 @@
 import { setInterval } from "./setting.js";
 
 
-export const alertThrow = true;
-export const afterReload = true;
 export const SILENT = () => {};
 export const POST = "POST";
 
@@ -20,7 +18,8 @@ export function request(method, endpoint, body, callback, interval=10, reload=tr
     if (endpoint.indexOf("reply") !== -1) {
         throw "This endpoint is not available.";
     };
-    let doReload = reload && afterReload && endpoint.endsWith("update");
+    let doReload = reload && endpoint.indexOf("update") !== -1;
+    console.log(`Request[${method},${reload}] ${endpoint}`);
     if (doReload && window.loadingShow) window.loadingShow();
     let isString = typeof(body) == "string" || body instanceof String;
     fetch(new Request(`wry://api/${endpoint}`, {
@@ -41,16 +40,18 @@ export function request(method, endpoint, body, callback, interval=10, reload=tr
                                     ok = true;
                                     if (response.status == 400 || response.status == 404)
                                         response.text().then(text => {
-                                            if (alertThrow) { alert(text); };
                                             if (doAlert) {
                                                 window.loadingSetText(`Error:\n${text}`);
                                                 window.loadingShow();
-                                            } else throw text;
-                                        });
-                                    else callback(response);
-                                    if (doReload) {
-                                        scrollTo(0, 0);
-                                        location.reload();
+                                            };
+                                            throw text;
+                                        })
+                                    else {
+                                        callback(response);
+                                        if (doReload) {
+                                            scrollTo(0, 0);
+                                            location.reload();
+                                        };
                                     };
                                 };
                             })
@@ -62,14 +63,11 @@ export function request(method, endpoint, body, callback, interval=10, reload=tr
 };
 
 
-export function startInteraction(callback) { setInterval(0.001, callback); };
-export function endInteraction() { setInterval("setting"); };
-
-
 /**
  * Open file dialog
  * @param {function} callback - Callback to be passed path
  */
 export function open(callback) {
-    request(POST, "open/.../...", "", response => { response.text().then(callback); }, 10, false);
+    request(POST, "open/.../...", "", SILENT, 10, false);
+    window._fileSelected = callback;
 };

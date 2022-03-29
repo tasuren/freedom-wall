@@ -4,93 +4,90 @@
 <script type="module">
   import { getWallpapers, postWallpaper, updateWallpaper } from "./freedomwall/wallpapers.js";
   import { getTemplates } from "./freedomwall/templates.js";
-  import {
-    startInteraction, open,
-    SILENT, afterReload
-  } from "./freedomwall/utils.js";
+  import { open, SILENT } from "./freedomwall/utils.js";
 
   let original = window.onload;
   window.onload = function () {
     let languageSelect = document.getElementById("language");
     let params = (new URL(location)).searchParams;
-    startInteraction(
-      _ => {
-        if (params.get("wallpaper")) {
-          // 壁紙一つの設定画面の場合
-          document.getElementById("normal").hidden = true;
-          let div = document.getElementById("wallpaperSetting");
-          div.hidden = false;
-          getWallpapers(wallpapers => {
-            let name = params.get("wallpaper");
-            let wallpaper = wallpapers[name];
-            document.getElementById("wallpaperName").innerText = name;
-            let escapedName = window.escapeHTML(name);
-            div.innerHTML += `
-              <label for="wallpaperName" class="language ja">名前</label>
-              <label for="wallpaperName" class="language en">Name</label>
-              <br>
-              <input type="text" name="wallpaperName" data-name="name" class="wallpaperSetting" value="${escapedName}"></input>
-              <br>
-              <label for="wallpaperAuthor" class="language ja">作者</label>
-              <label for="wallpaperAuthor" class="language en">Author</label>
-              <br>
-              <input type="text" class="wallpaperSetting" id="wallpaperAuthor" data-name="author" name="wallpaperAuthor" value="${window.escapeHTML(wallpaper.author)}">
-              <br>
-              <label for="wallpaperDescription" class="language ja">説明</label>
-              <label for="wallpaperDescription" class="language en">Description</label>
-              <br>
-              <textarea class="wallpaperSetting" data-name="description" id="wallpaperDescription" name="wallpaperDescription">${window.escapeHTML(wallpaper.description)}</textarea>
-              <br>
-              <label for="wallpaperSetting" class="language ja">設定</label>
-              <label for="wallpaperSetting" class="language en">Setting</label>
-              <br>
-              <div name="wallpaperSetting">
-                ${Object.keys(wallpaper.setting).map(key => {
-                  let name = window.escapeHTML(wallpaper.setting[key]);
-                  return `
-                    <label for="wallpaperSetting-${name}"></label>
-                    <input type="text" name="wallpaperSetting-${name}" id="wallpaperSetting-${name}" data-name="setting" value="${name}"></input>
-                    ${key.endsWith("path") ? `<button type="button" class="wallpaperSetting settingDetail" name="${name}" onclick="window._open(this.name);">Select</button>` : ""}
-                  `;
-                })}
-              </div>
-              <label for="wallpaperForceSize" class="language ja">サイズ強制</label>
-              <label for="wallpaperForceSize" class="language en">Force adjustment size</label>
-              <br>
-              <input type="checkbox" class="wallpaperSetting" data-name="forceSize" name="wallpaperForceSize"${wallpaper.forceSize ? " checked" : ""}></input>
-              <br><br>
-              <button type="button" onclick="window._save('${escapedName}');" class="language ja">保存</button>
-              <button type="button" onclick="window._save('${escapedName}');" class="language en">Save</button>
-              <button type="button" onclick="window._remove('${escapedName}');" class="language ja">削除</button>
-              <button type="button" onclick="window._remove('${escapedName}');" class="language en">Delete</button>
-            `;
+    if (params.get("wallpaper")) {
+      // 壁紙一つの設定画面の場合
+      document.getElementById("normal").hidden = true;
+      let div = document.getElementById("wallpaperSetting");
+      div.hidden = false;
+      getWallpapers(wallpapers => {
+        let name = params.get("wallpaper");
+        // もし存在しないプロファイルの場合はリストにリダイレクトする。
+        if (Object.keys(wallpapers).indexOf(name) === -1)
+          location = location.pathname;
+        let wallpaper = wallpapers[name];
+        document.getElementById("wallpaperName").innerText = name;
+        let escapedName = window.escapeHTML(name);
+        div.innerHTML += `
+          <label for="wallpaperName" class="language ja">名前</label>
+          <label for="wallpaperName" class="language en">Name</label>
+          <br>
+          <input type="text" name="wallpaperName" data-name="name" class="wallpaperSetting" value="${escapedName}"></input>
+          <br>
+          <label for="wallpaperAuthor" class="language ja">作者</label>
+          <label for="wallpaperAuthor" class="language en">Author</label>
+          <br>
+          <input type="text" class="wallpaperSetting" id="wallpaperAuthor" data-name="author" name="wallpaperAuthor" value="${window.escapeHTML(wallpaper.author)}">
+          <br>
+          <label for="wallpaperDescription" class="language ja">説明</label>
+          <label for="wallpaperDescription" class="language en">Description</label>
+          <br>
+          <textarea class="wallpaperSetting" data-name="description" id="wallpaperDescription" name="wallpaperDescription" rows="5" cols="50">${window.escapeHTML(wallpaper.description)}</textarea>
+          <br>
+          <label for="wallpaperSetting" class="language ja">設定</label>
+          <label for="wallpaperSetting" class="language en">Setting</label>
+          <br>
+          <div>
+            ${Object.keys(wallpaper.setting).map(key => {
+              let value = window.escapeHTML(wallpaper.setting[key]);
+              let name = window.escapeHTML(key);
+              return `
+                <label for="wallpaperSetting-${name}"></label>
+                <input type="text" name="wallpaperSetting-${name}" data-name="${name}" class="wallpaperSetting detail" id="wallpaperSetting-${name}" data-name="setting" value="${value}"></input>
+                ${key.toLowerCase().endsWith("path") ? `<button type="button" name="${name}" onclick="window._open(this.name);">Select</button>` : ""}
+              `;
+            })}
+          </div>
+          <label for="wallpaperForceSize" class="language ja">サイズ強制</label>
+          <label for="wallpaperForceSize" class="language en">Force adjustment size</label>
+          <br>
+          <input type="checkbox" class="wallpaperSetting" data-name="forceSize" name="wallpaperForceSize"${wallpaper.forceSize ? " checked" : ""}></input>
+          <br><br>
+          <button type="button" onclick="window._save('${escapedName}');" class="language ja">保存</button>
+          <button type="button" onclick="window._save('${escapedName}');" class="language en">Save</button>
+          <button type="button" onclick="window._remove('${escapedName}');" class="language ja">削除</button>
+          <button type="button" onclick="window._remove('${escapedName}');" class="language en">Delete</button>
+        `;
 
-            original(true);
-          });
-        } else {
-          getTemplates(templates => {
-            // 追加可能な壁紙テンプレートをselectに追加する。
-            let select = document.getElementById("add-wallpapers");
-            var name = "";
-            for (let template of templates.map(window.escapeHTML)) {
-              select.innerHTML += `<option value="${template}">${template}</option>`;
-            };
-            getWallpapers(wallpapers => {
-              // 壁紙一覧を作る。
-              let ul = document.getElementById("wallpapers");
-              var name;
-              Object.keys(wallpapers).forEach(key => {
-                name = window.escapeHTML(key);
-                ul.innerHTML += `<li>
-                  <a href="./_wallpapers.html?wallpaper=${name}">${name}</a>
-                </li>`;
-              });
-              original(true);
-            });
-          });
+        original();
+      });
+    } else {
+      getTemplates(templates => {
+        // 追加可能な壁紙テンプレートをselectに追加する。
+        let select = document.getElementById("add-wallpapers");
+        var name = "";
+        for (let template of templates.map(window.escapeHTML)) {
+          select.innerHTML += `<option value="${template}">${template}</option>`;
         };
-      }
-    );
+        getWallpapers(wallpapers => {
+          // 壁紙一覧を作る。
+          let ul = document.getElementById("wallpapers");
+          var name;
+          Object.keys(wallpapers).forEach(key => {
+            name = window.escapeHTML(key);
+            ul.innerHTML += `<li>
+              <a href="./_wallpapers.html?wallpaper=${name}">${name}</a>
+            </li>`;
+          });
+          original();
+        });
+      });
+    };
   };
 
   window._addWallpaper = function (template) {
@@ -111,18 +108,16 @@
 
   window._save = function (name) {
     // セーブ
-    data = {};
-    callback = null;
-    for (let element of Document.getElementsByClassName("wallpaperSetting")) {
+    let data = {setting: {}}; var callback = null;
+    for (let element of document.getElementsByClassName("wallpaperSetting")) {
       let key = element.getAttribute("data-name");
-      if (key == "setting") {
-        if (Object.keys(data).indexOf("setting") !== -1) data.setting = {};
-        data.setting[element.name] = element.value;
-      } else if (key == "name")
-        callback = (_) => updateWallpaper(name, element.value, "rename")
-      else data[key] = element.value;
+      if (element.classList.contains("detail")) {
+        data.setting[key] = element.value;
+      } else if (key == "name" && element.value != name)
+        callback = (_) => { updateWallpaper(name, element.value, "rename") }
+      else data[key] = key == "forceSize" ? element.checked : element.value;
     };
-    updateWallpaper(name, data, "update", callback || ((_) => {}), !Boolean(callback));
+    updateWallpaper(name, data, "write", callback || ((_) => {}), !Boolean(callback));
   };
 
   // 削除
@@ -150,6 +145,8 @@
     </ul>
   </div>
   <div id="wallpaperSetting" hidden>
+    <a href="wry://pages/_wallpapers.html" class="language ja">戻る</a>
+    <a href="wry://pages/_wallpapers.html" class="language en">Back</a>
     <h1 id="wallpaperName"></h1>
   </div>
 {% endblock content %}

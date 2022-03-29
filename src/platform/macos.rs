@@ -216,13 +216,6 @@ impl WindowTrait for Window {
             wallpaper: wallpaper, target: target
         };
         window.set_transparent(alpha);
-        window.set_click_through(true);
-        unsafe {
-            // クリック等のイベントがウィンドウに来ないようにする。
-            let _: () = msg_send![
-                window.ns_window, setIgnoresMouseEvents: YES
-            ];
-        }
         window
     }
 
