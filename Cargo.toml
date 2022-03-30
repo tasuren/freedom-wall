@@ -20,8 +20,7 @@ core-foundation = "0.9.3"
 # [target.'cfg("windows")'.dependencies]
 
 [dependencies]
-wry = "0.13.3"
-tao = "0.6.3"
+wry = "0.14.0"
 mime_guess = "2.0.4"
 url = "2.2.2"
 urlencoding = "2.1.0"

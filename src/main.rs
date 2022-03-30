@@ -1,5 +1,7 @@
 //! FreedomWall by tasuren
 
+#![allow(non_snake_case)]
+
 use wry::{
     application::{
         event::{ Event, StartCause, WindowEvent },
@@ -65,10 +67,7 @@ fn main() {
                 Event::WindowEvent {
                     event: WindowEvent::CloseRequested, ..
                 } => {
-                    manager.reset_windows();
-                    if manager.heartbeat.as_ref().is_some() {
-                        let _ = manager.heartbeat_sender.send(0.0);
-                    };
+                    manager.stop();
                     println!("Bye");
                     *control_flow = ControlFlow::Exit;
                 },

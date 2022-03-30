@@ -24,7 +24,7 @@ use rust_i18n::{ t, set_locale };
 use super::{
     window::{ Window, WindowTrait },
     data_manager::{
-        DataManager, Wallpaper, WallpaperJson, ExtensionJson, Target,
+        DataManager, Wallpaper, WallpaperJson, Target,
         add_setting_path
     },
     platform::get_windows, APPLICATION_NAME, utils
@@ -68,11 +68,13 @@ pub enum UserEvents {
 
 
 /// リクエストから適切なファイルを探し出しそれを返します。
-fn request2response(uri: &str) -> Result<Response, Error> {
+fn request2response(request: &Request) -> Result<Response, Error> {
+    let uri = request.uri();
     if let Ok(url) = Url::parse(uri) {
         if let Ok(path) = if uri.starts_with("wry://pages/") {
             Ok(PathBuf::from(format!("pages/{}", url.path())))
          } else { url.to_file_path() } {
+            println!("File request: {}", uri);
             let test;
             return ResponseBuilder::new()
                 .mimetype(
@@ -84,9 +86,11 @@ fn request2response(uri: &str) -> Result<Response, Error> {
                         _ => "text/plain"
                     }
                 )
+                .status(200)
                 .body(read(canonicalize(path.to_str().unwrap())?)?);
         };
     };
+    println!("File request (NotFound): {}", uri);
     ResponseBuilder::new()
         .header("Location", "pages/NotFound.html")
         .status(301)
@@ -128,7 +132,7 @@ fn request2waiter(
                 .status(201)
                 .body(Vec::new())
         }
-    } else { request2response(request.uri()) }
+    } else { request2response(request) }
 }
 
 
@@ -185,7 +189,7 @@ impl Manager {
                 )
             )
             .with_url("wry://pages/_home.html").unwrap()
-            .with_dev_tool(true)
+            .with_devtools(true)
             .build().expect("Failed to build the setting webview.")
     }
 
@@ -242,11 +246,17 @@ impl Manager {
                         ) },
                         if data.detail.forceSize {
                             "// ウィンドウのサイズに壁紙のサイズを合わせるためのスクリプトを実行する。
+                            let resizeElement = function (element) {
+                                element.style.width = `${window.innerWidth}px`;
+                                element.style.height = `${window.innerHeight}px`;
+                            };
                             let resize = function () {
                                 for (let element of document.getElementsByClassName('background')) {
-                                    element.style.width = `${window.innerWidth}px`;
-                                    element.style.height = `${window.innerHeight}px`;
+                                    resizeElement(element);
                                 };
+                                if (window.__backgrounds__)
+                                    for (let element of window.__backgrounds__)
+                                        resizeElement(element);
                             };
                             window.addEventListener('resize', resize);
                             window.addEventListener('load', function (_) {
@@ -268,7 +278,7 @@ impl Manager {
                                 resize();
                             });"
                         } else { "" }))
-                    .with_dev_tool(self.data.general.dev)
+                    .with_devtools(self.data.general.dev)
                     .build().expect("Failed to build the webview.");
                 let mut new = Window::new(data, webview, alpha, target);
                 new.set_click_through(!self.data.general.dev);
@@ -286,7 +296,7 @@ impl Manager {
         // DEBUG: println!("{}", self.windows.len());
 
         // 背景を設定すべきウィンドウを探す。
-        for (title, (rect, main)) in titles.iter().zip(rects) {
+        for (title, (rect, main, extra)) in titles.iter().zip(rects) {
             if title.contains("FreedomWall") { continue; };
             let mut make = None;
             for target in self.data.general.wallpapers.iter() {
@@ -294,14 +304,14 @@ impl Manager {
                 if target.targets.iter().any(|target| title.contains(target))
                         && (target.exceptions.len() == 0 || target.exceptions.iter()
                             .all(|exception| !title.contains(exception))) {
-                    // 既に背景ウィンドウを設定している場合はそのウィンドウの位置と大きさを対象のウィンドウに合わせる。
                     let mut first = true;
                     for window in self.windows.iter_mut() {
                         if window.wallpaper.name == target.wallpaper
                                 && &window.target == title {
-                            // もし対象のウィンドウが見つかったのならそのウィンドウに背景ウィンドウを移動させる。
+                            // もし対象のウィンドウなら背景ウィンドウのサイズの変更や移動をさせたりする。
                             window.set_rect_from_vec(&rect);
-                            if main { window.on_front(); };
+                            window.set_front(main);
+                            window.set_order(extra);
                             done.push(window.webview.window().id());
                             first = false;
                             break;
@@ -360,11 +370,10 @@ impl Manager {
         let url = tentative_url.unwrap();
         */
 
+        let (ok, notfound) = (Ok("Ok".to_string()), Err("Not found".to_string()));
+
         let length = path.len();
         if length < 3 { return make_error(None); };
-        let (OK, NOTFOUND) = (
-            Ok("Ok".to_string()), Err("Not found".to_string())
-        );
         let mut write_mode = "";
         let is_update = path[2] == "update";
 
@@ -382,7 +391,7 @@ impl Manager {
                         if "jaen".contains(&data) {
                             set_locale(&data);
                             self.data.general.language = data;
-                            OK
+                            ok
                         } else { Err(t!("core.setting.notAppropriateLanguage")) }
                     } else { Ok(self.data.general.language.clone()) },
                     // 登録されている壁紙
@@ -392,7 +401,7 @@ impl Manager {
                             self.data.general.wallpapers = wallpapers;
                             // 現在開かれている背景ウィンドウを消す。
                             self.reset_windows();
-                            OK
+                            ok
                         } else { Err(t!("core.setting.loadJsonFailed")) }
                     } else {
                         Ok(to_string(&self.data.general.wallpapers).unwrap())
@@ -402,15 +411,15 @@ impl Manager {
                         if let Ok(value) = data.parse() {
                             self.data.general.updateInterval = value;
                             self.heartbeat_sender.send(value,).unwrap();
-                            OK
+                            ok
                         } else { Err("Failed to parse value.".to_string()) }
                     } else { Ok(self.data.general.updateInterval.to_string()) },
                     // 開発者モードをONにするかどうか。
                     "dev" => if is_update {
                         self.data.general.dev = if data == "1" { true } else { false };
-                        OK
+                        ok
                     } else { Ok((self.data.general.dev as usize).to_string()) },
-                    _ => NOTFOUND
+                    _ => notfound
                 }
             },
             // wallpapers/...
@@ -422,7 +431,7 @@ impl Manager {
                     match self.data.add_wallpaper(
                         data[0].to_string(), data[1].to_string()
                     ) {
-                        Err(message) => Err(message), _ => OK
+                        Err(message) => Err(message), _ => ok
                     }
                 } else {
                     let mut response_data = HashMap::new();
@@ -467,13 +476,13 @@ impl Manager {
 
                                 // データを書き込む。
                                 match self.data.write_setting() {
-                                    Ok(_) => OK, Err(message) => Err(message)
+                                    Ok(_) => ok, Err(message) => Err(message)
                                 }
                             },
                             Err(message) => Err(message)
-                        }, _ => NOTFOUND
+                        }, _ => notfound
                     }
-                } else { OK },
+                } else { ok },
                 // 壁紙プロファイルの名前変更
                 "rename" => if length >= 5 {
                     if let Err(message) = self.data.mv_wallpaper(path[3], path[4]) {
@@ -494,10 +503,10 @@ impl Manager {
                         self.reset_windows();
                         // 設定を書き込む。
                         match self.data.write_setting() {
-                            Ok(_) => OK, Err(message) => Err(message)
+                            Ok(_) => ok, Err(message) => Err(message)
                         }
                     }
-                } else { OK }, _ => NOTFOUND
+                } else { ok }, _ => notfound
             },
             // templates/all/get
             // テンプレートの取得を行えます。
@@ -513,8 +522,8 @@ impl Manager {
                         };
                         Ok(to_string(&data).unwrap())
                     },
-                    "update" => NOTFOUND,
-                    _ => NOTFOUND
+                    "update" => notfound,
+                    _ => notfound
                 },
                 "one" => if length >= 4 {
                     match self.data.get_extension(path[3]) {
@@ -525,18 +534,18 @@ impl Manager {
                                     self.data.extensions[index].detail.setting = value;
                                     self.reset_windows();
                                     match self.data.write_extension(path[3].to_string()){
-                                        Ok(_) => OK,
+                                        Ok(_) => ok,
                                         _ => Err(t!("core.setting.failedWrite", path=path[3]))
                                     }
-                                }, _ => NOTFOUND
-                            }, _ => NOTFOUND
-                        }, _ => NOTFOUND
+                                }, _ => notfound
+                            }, _ => notfound
+                        }, _ => notfound
                     }
-                } else { NOTFOUND },
+                } else { notfound },
                 "reload" => match self.data.read_extensions() {
-                    Ok(_) => OK, Err(message) => Err(message)
+                    Ok(_) => ok, Err(message) => Err(message)
                 },
-                _ => NOTFOUND
+                _ => notfound
             },
             // gettext/<text>/get
             "gettext" => Ok(t!(path[2])),
@@ -551,16 +560,16 @@ impl Manager {
                     }));
                     ()
                 }));
-                OK
+                ok
             },
             "openFolder" => {
                 // openFolder/.../...
                 // フォルダを開く。
                 utils::open_folder(data);
-                OK
+                ok
             },
             "getPath" => add_setting_path(""),
-            _ => NOTFOUND
+            _ => notfound
         };
 
         // もしデータ書き込みが必要なら書き込む。
@@ -599,5 +608,14 @@ impl Manager {
         for index in self.get_windows_range() {
             self.remove(index);
         };
+    }
+
+    /// お片付けをします。
+    pub fn stop(&mut self) {
+        if let Some(handle) = self.heartbeat.take() {
+            let _ = self.heartbeat_sender.send(0.0);
+            handle.join().expect("Failed to join heartbeat thread.");
+        };
+        self.reset_windows();
     }
 }

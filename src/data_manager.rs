@@ -16,7 +16,7 @@ use super::APPLICATION_NAME;
 
 const FAILED_JSON: &str = "JSON生成時にエラーが発生しました。";
 const DATA_DEFAULT: &str = r#"{
-    "language": "ja", "wallpapers": [], "updateInterval": 0.1, "dev": false
+    "language": "en", "wallpapers": [], "updateInterval": 0.1, "dev": false
 }"#;
 
 
@@ -330,6 +330,7 @@ impl DataManager {
         })
     }
 
+    /* 将来性を考慮して削除ではなくコメントアウト
     /// テンプレート情報を取得します。
     pub fn read_templates(&mut self) -> Result<&Templates, String> {
         self.templates = read_templates()?;
@@ -341,6 +342,7 @@ impl DataManager {
         self.general = read_setting()?;
         Ok(&self.general)
     }
+    */
 
     /// 設定を書き込みます。
     pub fn write_setting(&self) -> Result<(), String> {
@@ -350,11 +352,13 @@ impl DataManager {
         )
     }
 
+    /* 将来性を考慮して削除ではなくコメントアウト
     /// 壁紙の設定を読み込みます。
     pub fn read_wallpapers(&mut self) -> Result<&Wallpapers, String> {
         self.wallpapers = read_wallpapers()?;
         Ok(&self.wallpapers)
     }
+    */
 
     /// 拡張機能を読み込みます。
     pub fn read_extensions(&mut self) -> Result<&Extensions, String> {

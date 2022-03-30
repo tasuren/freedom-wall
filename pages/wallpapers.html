@@ -48,11 +48,11 @@
               let value = window.escapeHTML(wallpaper.setting[key]);
               let name = window.escapeHTML(key);
               return `
-                <label for="wallpaperSetting-${name}"></label>
+                <label for="wallpaperSetting-${name}">${name}</label>
                 <input type="text" name="wallpaperSetting-${name}" data-name="${name}" class="wallpaperSetting detail" id="wallpaperSetting-${name}" data-name="setting" value="${value}"></input>
                 ${key.toLowerCase().endsWith("path") ? `<button type="button" name="${name}" onclick="window._open(this.name);">Select</button>` : ""}
               `;
-            })}
+            }).join("<br>")}
           </div>
           <label for="wallpaperForceSize" class="language ja">サイズ強制</label>
           <label for="wallpaperForceSize" class="language en">Force adjustment size</label>
@@ -130,7 +130,7 @@
 {% endblock head %}
 {% block content %}
   <div id="normal">
-    <h1 id="subject">Setting</h1>
+    <h1 id="subject">Wallpapers</h1>
     <div class="language ja">
       ここでは使用する壁紙の登録と削除と編集をすることが可能です。
     </div>

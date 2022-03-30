@@ -42,9 +42,10 @@ use super::super::{ data_manager::Wallpaper, window::WindowTrait };
 
 pub struct Window {
     pub webview: WebView,
-    pub ns_window: *const Object,
+    ns_window: *const Object,
     pub wallpaper: Wallpaper,
-    pub target: String
+    pub target: String,
+    before_front: bool
 }
 
 
@@ -130,21 +131,10 @@ fn cfstring2string(text: CFStringRef) -> String {
 }
 
 
-/// ウィンドウで一番前に表示されてるものを検索します。
-pub fn get_front(windows_name: Vec<String>, windows_rect: Vec<(Vec<f64>, isize)>) -> Option<usize> {
-    for (index, (rect, name)) in windows_rect.iter().zip(windows_name).enumerate() {
-        if &name == "Dock" && rect.1 != 0 {
-            return Some(index+1)
-        };
-    };
-    None
-}
-
-
 /// 渡された文字列が名前に含まれるウィンドウのサイズを取得します。
-pub fn get_windows() -> (Vec<String>, Vec<(Vec<f64>, bool)>) {
+pub fn get_windows() -> (Vec<String>, Vec<(Vec<f64>, bool, isize)>) {
     let mut windows_name = Vec::new();
-    let mut windows_rect: Vec<(Vec<f64>, bool)> = Vec::new();
+    let mut windows_rect: Vec<(Vec<f64>, bool, isize)> = Vec::new();
 
     let windows = unsafe {
         CGWindowListCopyWindowInfo(
@@ -198,9 +188,13 @@ pub fn get_windows() -> (Vec<String>, Vec<(Vec<f64>, bool)>) {
 
             if update {
                 if same_before { windows_name.pop(); windows_rect.pop(); };
-                windows_rect.push((tentative, next_main));
+                windows_rect.push((tentative, next_main, get_cfnumber(
+                    get_cfdictionary_value_from_str(
+                        data, "kCGWindowNumber"
+                    ).expect("CFDictionaryからkCGWindowNumberの値を取り出すのに失敗しました。")
+                ).expect("CFNumberの値の取り出しに失敗しました。")));
+                if next_main && !title.contains("FreedomWall") { next_main = false; };
                 windows_name.push(title);
-                if next_main { next_main = false; };
             };
         };
     };
@@ -211,9 +205,9 @@ pub fn get_windows() -> (Vec<String>, Vec<(Vec<f64>, bool)>) {
 impl WindowTrait for Window {
     fn new(wallpaper: Wallpaper, webview: WebView, alpha: f64, target: String) -> Self {
         let ns_window = webview.window().ns_window() as *const Object;
-        let mut window = Self {
+        let window = Self {
             webview: webview, ns_window: ns_window,
-            wallpaper: wallpaper, target: target
+            wallpaper: wallpaper, target: target, before_front: false
         };
         window.set_transparent(alpha);
         window
@@ -238,13 +232,24 @@ impl WindowTrait for Window {
     }
 
     fn set_rect_from_vec(&self, rect: &Vec<f64>) {
-        // ウィンドウの位置を移動する。
         self.set_rect(rect[2], rect[3], rect[1], rect[0]);
     }
 
-    fn on_front(&mut self) {
-        unsafe {
-            let _: () = msg_send![self.ns_window, orderFrontRegardless];
+    fn set_front(&mut self, front: bool) {
+        // 最前列のウィンドウが切り替わった際のみ動作を行う。
+        if front != self.before_front {
+            self.before_front = front;
+            println!("Front changed [{}]: {}", self.target, front);
+            self.webview.window().set_always_on_top(front);
+        };
+    }
+
+    fn set_order(&mut self, target: isize) {
+        // 最前列にオーバーレイ表示されている背景の場合はする必要がないのでifでパスする。
+        if !self.before_front {
+            unsafe {
+                let _: () = msg_send![self.ns_window, orderWindow: 1 as isize relativeTo: target];
+            };
         };
     }
 
