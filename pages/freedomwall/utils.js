@@ -71,3 +71,22 @@ export function open(callback) {
     request(POST, "open/.../...", "", SILENT, 10, false);
     window._fileSelected = callback;
 };
+
+
+/**
+ * Open folder
+ * @param {string} path - Path to folder
+ * @param {function} callback - Callback to be called when opened
+ */
+export function openFolder(path, callback) {
+    request(POST, "openFolder/.../...", path, (_) => callback());
+};
+
+
+/**
+ * Get the path to the FreedomWall configuration folder.
+ * @param {function} callback - Callback to be passed path
+ */
+export function getPath(callback) {
+    request(POST, "getPath/.../...", "", (response) => response.text().then(callback));
+};

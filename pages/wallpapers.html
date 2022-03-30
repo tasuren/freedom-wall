@@ -4,7 +4,8 @@
 <script type="module">
   import { getWallpapers, postWallpaper, updateWallpaper } from "./freedomwall/wallpapers.js";
   import { getTemplates } from "./freedomwall/templates.js";
-  import { open, SILENT } from "./freedomwall/utils.js";
+  import { open, openFolder, getPath, SILENT } from "./freedomwall/utils.js";
+  window._openFolder = openFolder;
 
   let original = window.onload;
   window.onload = function () {
@@ -84,7 +85,10 @@
               <a href="./_wallpapers.html?wallpaper=${name}">${name}</a>
             </li>`;
           });
-          original();
+          getPath(path => {
+            window.__path__ = path;
+            original();
+          });
         });
       });
     };
@@ -143,6 +147,9 @@
     <br>
     <ul id="wallpapers">
     </ul>
+    <br>
+    <button type="button" class="language ja" onclick="window._openFolder(`${window.__path__}wallpapers`, () => {});"> 壁紙フォルダを開く</button>
+    <button type="button" class="language en" onclick="window._openFolder(`${window.__path__}wallpapers`, () => {});">Open wallpaper folder</button>
   </div>
   <div id="wallpaperSetting" hidden>
     <a href="wry://pages/_wallpapers.html" class="language ja">戻る</a>

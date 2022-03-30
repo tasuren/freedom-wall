@@ -64,7 +64,14 @@ fn main() {
                 },
                 Event::WindowEvent {
                     event: WindowEvent::CloseRequested, ..
-                } => *control_flow = ControlFlow::Exit,
+                } => {
+                    manager.reset_windows();
+                    if manager.heartbeat.as_ref().is_some() {
+                        let _ = manager.heartbeat_sender.send(0.0);
+                    };
+                    println!("Bye");
+                    *control_flow = ControlFlow::Exit;
+                },
                 _ => ()
             };
         });

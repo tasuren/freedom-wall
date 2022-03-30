@@ -33,7 +33,7 @@ fn get_application_name() -> String {
 
 
 /// 渡されたパスに設定ファイルを保存する場所のパスを追加します。
-fn add_setting_path(path: &str) -> Result<String, String> {
+pub fn add_setting_path(path: &str) -> Result<String, String> {
     match AppDirs::new(Some(&get_application_name()), false) {
         Some(dir) => {
             let data_dir = dir.data_dir;
@@ -363,10 +363,10 @@ impl DataManager {
     }
 
     /// 拡張機能のデータを取得します。
-    pub fn get_extensions(&self, name: &str) -> Option<&Extension> {
-        for extension in self.extensions.iter() {
+    pub fn get_extension(&self, name: &str) -> Option<(usize, &Extension)> {
+        for (index, extension) in self.extensions.iter().enumerate() {
             if &extension.name == name {
-                return Some(extension);
+                return Some((index, extension));
             };
         };
         None
@@ -374,7 +374,7 @@ impl DataManager {
 
     /// 拡張機能の設定を書き込みます。
     pub fn write_extension(&self, name: String) -> Result<(), String> {
-        if let Some(extension) = self.get_extensions(&name) {
+        if let Some((_, extension)) = self.get_extension(&name) {
             write(
                 &format!("{}/data.json", extension.path),
                 to_string_pretty(&extension.detail)
