@@ -16,7 +16,7 @@ use super::APPLICATION_NAME;
 
 const FAILED_JSON: &str = "JSON生成時にエラーが発生しました。";
 const DATA_DEFAULT: &str = r#"{
-    "language": "en", "wallpapers": [], "updateInterval": 0.1, "dev": false
+    "language": "en", "wallpapers": [], "updateInterval": 0.05, "dev": false
 }"#;
 
 
