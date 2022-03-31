@@ -17,7 +17,12 @@ objc = "0.2.7"
 core-graphics = "0.22.3"
 core-foundation = "0.9.3"
 
-# [target.'cfg("windows")'.dependencies]
+[target.'cfg(target_os="windows")'.dependencies.windows-sys]
+version = "0.34.0"
+features = [
+    "Win32_Foundation",
+    "Win32_UI_WindowsAndMessaging",
+]
 
 [dependencies]
 wry = "0.14.0"

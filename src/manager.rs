@@ -69,7 +69,10 @@ pub enum UserEvents {
 
 /// リクエストから適切なファイルを探し出しそれを返します。
 fn request2response(request: &Request) -> Result<Response, Error> {
-    let uri = request.uri();
+    #[cfg(target_os="windows")]
+    let raw = request.uri().replace("c//", "/");
+    let uri = if cfg!(target_os="windows") { &raw }
+        else { request.uri() };
     if let Ok(url) = Url::parse(uri) {
         if let Ok(path) = if uri.starts_with("wry://pages/") {
             Ok(PathBuf::from(format!("pages/{}", url.path())))
@@ -92,7 +95,7 @@ fn request2response(request: &Request) -> Result<Response, Error> {
     };
     println!("File request (NotFound): {}", uri);
     ResponseBuilder::new()
-        .header("Location", "pages/NotFound.html")
+        .header("Location", "wry://pages/NotFound.html")
         .status(301)
         .body(Vec::new())
 }
@@ -309,8 +312,9 @@ impl Manager {
                         if window.wallpaper.name == target.wallpaper
                                 && &window.target == title {
                             // もし対象のウィンドウなら背景ウィンドウのサイズの変更や移動をさせたりする。
-                            window.set_rect_from_vec(&rect);
                             window.set_front(main);
+                            //println!("{:?}", &rect);
+                            window.set_rect_from_vec(&rect);
                             window.set_order(extra);
                             done.push(window.webview.window().id());
                             first = false;

@@ -8,10 +8,7 @@ use std::{
 
 use wry::{
     webview::WebView,
-    application::{
-        platform::macos::WindowExtMacOS,
-        dpi::{ LogicalPosition, LogicalSize }
-    }
+    application::platform::macos::WindowExtMacOS
 };
 
 use objc::{
@@ -37,7 +34,10 @@ use core_foundation::{
     base::CFIndex
 };
 
-use super::super::{ data_manager::Wallpaper, window::WindowTrait };
+use super::super::{
+    data_manager::Wallpaper, window::WindowTrait,
+    platform::{ set_front, Titles, ExtendedRects }
+};
 
 
 pub struct Window {
@@ -103,11 +103,11 @@ fn get_cfnumber_as_f64(number: *const c_void) -> Option<f64> {
 
 /// 渡されたCFNumberのポインタから整数を取り出します。
 fn get_cfnumber(number: *const c_void) -> Option<isize> {
-    let mut value: isize = 0;
+    let mut value: i32 = 0;
     unsafe {
         if CFNumberGetValue(
             number as CFNumberRef, kCFNumberIntType,
-            &mut value as *mut isize as *mut c_void
+            &mut value as *mut i32 as *mut c_void
         ) { Some(value) } else { None }
     }
 }
@@ -131,10 +131,10 @@ fn cfstring2string(text: CFStringRef) -> String {
 }
 
 
-/// 渡された文字列が名前に含まれるウィンドウのサイズを取得します。
-pub fn get_windows() -> (Vec<String>, Vec<(Vec<f64>, bool, isize)>) {
-    let mut windows_name = Vec::new();
-    let mut windows_rect: Vec<(Vec<f64>, bool, isize)> = Vec::new();
+/// 存在する全てのウィンドウのタイトルや位置そしてサイズ等を取得します。
+/// 二番目のVectorの三番目のisizeの値はウィンドウ番号です。(背景ウィンドウの順序変更に使用する)
+pub fn get_windows() -> (Titles, ExtendedRects) {
+    let (mut windows_name, mut windows_rects) = (Vec::new(), Vec::new());
 
     let windows = unsafe {
         CGWindowListCopyWindowInfo(
@@ -169,15 +169,15 @@ pub fn get_windows() -> (Vec<String>, Vec<(Vec<f64>, bool, isize)>) {
             let rect = match get_cfdictionary_value_from_str(
                 data, "kCGWindowBounds"
             ) { Some(value) => value as CFDictionaryRef, _ => continue };
-            let mut tentative: Vec<f64> = Vec::new();
+            let mut tentative: Vec<i32> = Vec::new();
 
             let mut update = false;
-            for (i, key) in ["Height", "Width", "X", "Y"].iter().enumerate() {
+            for (i, key) in ["Width", "Height", "X", "Y"].iter().enumerate() {
                 tentative.push(
-                    get_cfnumber_as_f64(
+                    get_cfnumber(
                         get_cfdictionary_value_from_str(rect, key)
                             .expect("CFDictionaryからkCGWindowBoundsの値を取り出すのに失敗しました。")
-                    ).expect("CFNumberの値の取り出しに失敗しました。") as f64
+                    ).expect("CFNumberの値の取り出しに失敗しました。")
                 );
                 if !windows_rect.is_empty() || !same_before
                         || windows_rect[before_index].0[i] < tentative[i] {
@@ -219,22 +219,6 @@ impl WindowTrait for Window {
         };
     }
 
-    fn set_rect(&self, x: f64, y: f64, width: f64, height: f64) {
-        let window = self.webview.window();
-        // 背景ウィンドウのサイズを変える。
-        window.set_inner_size::<LogicalSize<f64>>(
-            (LogicalSize {width: width, height: height}).into()
-        );
-        // 背景ウィンドウの位置を移動する。
-        window.set_outer_position::<LogicalPosition<f64>>(
-            (LogicalPosition { x: x, y: y }).into()
-        );
-    }
-
-    fn set_rect_from_vec(&self, rect: &Vec<f64>) {
-        self.set_rect(rect[2], rect[3], rect[1], rect[0]);
-    }
-
     fn set_front(&mut self, front: bool) {
         // 最前列のウィンドウが切り替わった際のみ動作を行う。
         if front != self.before_front {
@@ -260,4 +244,6 @@ impl WindowTrait for Window {
             ];
         };
     }
+
+    fn get_webview(&self) -> &WebView { &self.webview }
 }

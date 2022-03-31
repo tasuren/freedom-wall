@@ -14,7 +14,7 @@ export const POST = "POST";
  * @param {Object} body - Data to be sent.
  * @param {function(Response)} callback - response will be passed to this.
  */
-export function request(method, endpoint, body, callback, interval=10, reload=true, doAlert=true) {
+export function request(method, endpoint, body, callback, interval=30, reload=true, doAlert=true) {
     if (endpoint.indexOf("reply") !== -1) {
         throw "This endpoint is not available.";
     };
@@ -22,7 +22,7 @@ export function request(method, endpoint, body, callback, interval=10, reload=tr
     console.log(`Request[${method},${reload}] ${endpoint}`);
     if (doReload && window.loadingShow) window.loadingShow();
     let isString = typeof(body) == "string" || body instanceof String;
-    fetch(new Request(`wry://api/${endpoint}`, {
+    fetch(new Request(`https://wry.api/${endpoint}`, {
         method: method,
         header: {"Content-Type": isString ? "text/plain" : "application/json"},
         body: isString ? body : JSON.stringify(body)
@@ -31,10 +31,10 @@ export function request(method, endpoint, body, callback, interval=10, reload=tr
         .then(_ => {
             // レスポンスを待機する。
             var ok = false;
-            for (let i = 1; i < 10; i++) {
+            for (let i = 1; i < 50; i++) {
                 setTimeout(() => {
                     if (!ok) {
-                        fetch(new Request("wry://api/reply"))
+                        fetch(new Request("https://wry.api/reply"))
                             .then(response => {
                                 if (response.status != 503) {
                                     ok = true;
