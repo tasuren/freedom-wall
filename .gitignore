@@ -5,4 +5,5 @@ Cargo.lock
 .DS_Store
 
 _*.html
+pages/freedomwall/utils.js
 .vscode

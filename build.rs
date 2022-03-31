@@ -1,6 +1,6 @@
 //! FreedomWall - Build
 
-use std::{ fs::File, io::Write };
+use std::{ fs::{ File, read }, io::Write };
 
 use tera::{ Tera, Context };
 
@@ -21,6 +21,15 @@ fn main_of_main() {
                 .unwrap().as_bytes()
         ).unwrap();
     };
+    let mut f = File::create("pages/freedomwall/utils.js").unwrap();
+    f.write_all(
+        String::from_utf8_lossy(&read("pages/freedomwall/_utils.js").unwrap())
+            .to_string().replace(
+                "__SCHEME__", if cfg!(target_os="windows") {
+                    "https://wry."
+                }else { "wry://" }
+            ).as_bytes()
+    ).unwrap();
 }
 
 

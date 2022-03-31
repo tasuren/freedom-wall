@@ -71,8 +71,11 @@ pub enum UserEvents {
 fn request2response(request: &Request) -> Result<Response, Error> {
     #[cfg(target_os="windows")]
     let raw = request.uri().replace("c//", "/");
-    let uri = if cfg!(target_os="windows") { &raw }
-        else { request.uri() };
+    #[cfg(target_os="windows")]
+    let uri = &raw;
+    #[cfg(target_os="macos")]
+    let uri = request.uri();
+
     if let Ok(url) = Url::parse(uri) {
         if let Ok(path) = if uri.starts_with("wry://pages/") {
             Ok(PathBuf::from(format!("pages/{}", url.path())))

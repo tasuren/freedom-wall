@@ -23,10 +23,7 @@ use core_graphics::display::{
 use core_foundation::{
     dictionary::{ CFDictionaryRef, CFDictionaryGetValueIfPresent },
     array::{ CFArrayGetCount, CFArrayGetValueAtIndex },
-    number::{
-        CFNumberRef, CFNumberGetValue, kCFNumberFloat64Type,
-        kCFNumberIntType
-    },
+    number::{ CFNumberRef, CFNumberGetValue, kCFNumberIntType },
     string::{
         CFStringRef, CFStringCreateWithCString,
         CFStringGetLength, UniChar, kCFStringEncodingUTF8
@@ -36,7 +33,7 @@ use core_foundation::{
 
 use super::super::{
     data_manager::Wallpaper, window::WindowTrait,
-    platform::{ set_front, Titles, ExtendedRects }
+    platform::{ Titles, ExtendedRects }
 };
 
 
@@ -89,20 +86,8 @@ fn get_cfdictionary_value_from_str(data: CFDictionaryRef, key: &str) -> Option<*
 }
 
 
-/// 渡されたCFNumberのポインタからf64の値を取り出します。
-fn get_cfnumber_as_f64(number: *const c_void) -> Option<f64> {
-    let mut value: f64 = 0.0;
-    unsafe {
-        if CFNumberGetValue(
-            number as CFNumberRef, kCFNumberFloat64Type,
-            &mut value as *mut f64 as *mut c_void
-        ) { Some(value) } else { None }
-    }
-}
-
-
 /// 渡されたCFNumberのポインタから整数を取り出します。
-fn get_cfnumber(number: *const c_void) -> Option<isize> {
+fn get_cfnumber(number: *const c_void) -> Option<i32> {
     let mut value: i32 = 0;
     unsafe {
         if CFNumberGetValue(
@@ -134,7 +119,7 @@ fn cfstring2string(text: CFStringRef) -> String {
 /// 存在する全てのウィンドウのタイトルや位置そしてサイズ等を取得します。
 /// 二番目のVectorの三番目のisizeの値はウィンドウ番号です。(背景ウィンドウの順序変更に使用する)
 pub fn get_windows() -> (Titles, ExtendedRects) {
-    let (mut windows_name, mut windows_rects) = (Vec::new(), Vec::new());
+    let (mut windows_name, mut windows_rect): (_, ExtendedRects) = (Vec::new(), Vec::new());
 
     let windows = unsafe {
         CGWindowListCopyWindowInfo(
@@ -192,7 +177,7 @@ pub fn get_windows() -> (Titles, ExtendedRects) {
                     get_cfdictionary_value_from_str(
                         data, "kCGWindowNumber"
                     ).expect("CFDictionaryからkCGWindowNumberの値を取り出すのに失敗しました。")
-                ).expect("CFNumberの値の取り出しに失敗しました。")));
+                ).expect("CFNumberの値の取り出しに失敗しました。") as isize));
                 if next_main && !title.contains("FreedomWall") { next_main = false; };
                 windows_name.push(title);
             };
