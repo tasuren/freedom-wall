@@ -348,7 +348,6 @@ impl Manager {
         let mut path: Vec<&str> = tentative_path.split("/").collect();
 
         let length = path.len();
-        println!("{:?}", path);
         assert!(length >= 5);
 
         let (ok, notfound) = (Ok("Ok".to_string()), Err("Not found".to_string()));
