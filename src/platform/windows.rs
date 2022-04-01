@@ -13,9 +13,8 @@ use windows_sys::Win32::{
     Foundation::{ HWND, LPARAM, BOOL, RECT },
     UI::WindowsAndMessaging::{
         EnumWindows, SetLayeredWindowAttributes, SetWindowPos,
-        SetWindowLongA, GetWindowTextW, GetWindowRect,
-        GetForegroundWindow, MoveWindow,
-        AdjustWindowRectEx, GetWindowLongW
+        SetWindowLongA, GetWindowTextW,
+        GetForegroundWindow, MoveWindow
     },
     Graphics::Dwm::{
         DwmGetWindowAttribute,
@@ -93,7 +92,7 @@ fn set_order(hwnd: HWND, target: isize, more: u32) {
 
 impl WindowTrait for Window {
     fn new(data: Wallpaper, webview: WebView, target: String) -> Self {
-        let mut window = Self {
+        let window = Self {
             hwnd: webview.window().hwnd() as _, webview: webview,
             wallpaper: data, target: target, front: false, first: true
         };
