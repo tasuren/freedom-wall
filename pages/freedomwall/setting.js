@@ -16,11 +16,8 @@ export function postLanguage(language) {
  * Get a language setting.
  * @param {function} callback - Callback will be passed a language code.
  */
-export function getLanguage(callback, interval=10) {
-    request(
-        POST, "setting/language/get", "",
-        response => response.text().then(callback), interval
-    );
+export function getLanguage(callback) {
+    request(POST, "setting/language/get", "", callback);
 };
 
 
@@ -48,10 +45,7 @@ export function postWallpapers(wallpapers) {
  * @param {function} callback - Callback will be passed wallpaper settings.
  */
 export function getWallpapers(callback) {
-    request(
-        POST, "setting/wallpapers/get", "",
-        response => response.json().then(callback)
-    );
+    request(POST, "setting/wallpapers/get", "", callback, true);
 };
 
 
@@ -71,7 +65,7 @@ export function postInterval(interval) {
 export function getInterval(callback) {
     request(
         POST, "setting/interval/get", "",
-        response => response.text().then(interval => callback(parseFloat(interval)))
+        interval => callback(parseFloat(interval))
     );
 };
 
@@ -99,8 +93,5 @@ export function postDev(onoff) {
  * @param {function} callback - Callback will be passed whether developer mode is enabled or not.
  */
 export function getDev(callback) {
-    request(
-        POST, "setting/dev/get", "",
-        result => result.text().then(text => callback(Boolean(Number(text))))
-    );
+    request(POST, "setting/dev/get", "", text => callback(Boolean(Number(text))));
 };

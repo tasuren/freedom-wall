@@ -18,7 +18,7 @@ mod manager;
 mod utils;
 
 use manager::{ UserEvents, Manager };
-use utils::error;
+use utils::{ error, escape_for_js };
 
 
 i18n!("locales/app");
@@ -52,18 +52,13 @@ fn main() {
                 Event::UserEvent(UserEvents::FileSelected(path)) => {
                     // ファイルダイアログによりファイルが選択された場合はJavaScriptのコールバックを呼び出してWebViewにパスを渡す。
                     manager.setting.as_ref().unwrap().evaluate_script(&format!(
-                        "window._fileSelected(`{}`);", path
-                            .replace("`", "\\`").replace("\\", "\\\\")
+                        "window._fileSelected(`{}`);", escape_for_js(path)
                     )).unwrap();
                     manager.file_dialog = None;
                 },
                 Event::UserEvent(UserEvents::Request(request)) => {
                     // APIリクエストを処理する。ここでやらなければエラーが起きてしまう。理由は`manager.rs`にて記述済み。
-                    let response = manager.on_request(&request.uri, request.body.clone());
-                    let mut queues = manager.queues.borrow_mut();
-
-                    // リクエストの結果の返信をキューに追加する。
-                    queues.push(response);
+                    manager.on_request(&request.uri, request.body.clone());
                 },
                 Event::WindowEvent {
                     event: WindowEvent::CloseRequested, ..

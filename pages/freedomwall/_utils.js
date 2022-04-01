@@ -1,10 +1,19 @@
 //! FreedomWall.js - Utils
 
-import { setInterval } from "./setting.js";
-
 
 export const SILENT = () => {};
 export const POST = "POST";
+export const GET = "GET";
+var request_count = 0;
+window.__callbacks__ = {};
+
+
+let params = (new URL(location)).searchParams;
+if (params.has("window_id")) window.__WINDOW_ID__ = params.get("window_id");
+window.addEventListener("load", _ => {
+    for (let element of document.getElementsByTagName("a"))
+        element.setAttribute("href", `${element.getAttribute("href")}?window_id=${window.__WINDOW_ID__}`);
+});
 
 
 /**
@@ -12,54 +21,51 @@ export const POST = "POST";
  * @param {string} method - Method. Most of the time, `POST` is fine.
  * @param {string} endpoint - Request Destination. Example: `setting/language/get`.
  * @param {Object} body - Data to be sent.
- * @param {function(Response)} callback - response will be passed to this.
+ * @param {function} callback - response data (Json/String) will be passed to this.
+ * @param {boolean} isResponseJson - Is response json
+ * @param {reload} reload - Whether do reload
+ * @param {boolean} doAlert - Whether do alert on error
  */
-export function request(method, endpoint, body, callback, interval=30, reload=true, doAlert=true) {
+export function request(method, endpoint, body, callback, isResponseJson=false, reload=undefined, doAlert=true) {
     if (endpoint.indexOf("reply") !== -1) {
         throw "This endpoint is not available.";
     };
-    let doReload = reload && endpoint.indexOf("update") !== -1;
-    console.log(`Request[${method},${reload}] ${endpoint}`);
-    if (doReload && window.loadingShow) window.loadingShow();
-    let isString = typeof(body) == "string" || body instanceof String;
-    fetch(new Request(`__SCHEME__api/${endpoint}`, {
+
+    if (request_count > 10) { request_count = 0; };
+    request_count += 1;
+    // リロードするかどうか。もし指定されなかった場合はupdate時のみ自動でリロードする。
+    reload = typeof reload === "undefined" ? endpoint.indexOf("update") !== -1 : reload;
+    // もしリロードするかつローディングが実装されているのならローディングを表示する。
+    if (reload && window.loadingShow) window.loadingShow();
+    // bodyが文字列かどうかをチェックする。
+    let isString = typeof body == "string" || body instanceof String;
+
+    // コールバックを設定する。
+    window.__callbacks__[request_count] = function (status, data) {
+        if (status < 400) {
+            callback(isResponseJson ? JSON.parse(data) : data);
+            if (reload) {
+                scrollTo(0, 0);
+                location.reload();
+            };
+        } else {
+            if (window.loadingShow) {
+                window.loadingSetText();
+                window.loadingShow();
+            };
+            throw data;
+        };
+    };
+
+    // リクエストを行う。
+    
+    console.log(`Request[Method:${method},RequestId:${request_count},Reload:${reload}] ${endpoint}`);
+    fetch(new Request(`__SCHEME__api/${window.__WINDOW_ID__}/${request_count}/${endpoint}`, {
         method: method,
         header: {"Content-Type": isString ? "text/plain" : "application/json"},
         body: isString ? body : JSON.stringify(body)
     }))
         .then(response => response.text())
-        .then(_ => {
-            // レスポンスを待機する。
-            var ok = false;
-            for (let i = 1; i < 50; i++) {
-                setTimeout(() => {
-                    if (!ok) {
-                        fetch(new Request("__SCHEME__api/reply"))
-                            .then(response => {
-                                if (response.status != 503) {
-                                    ok = true;
-                                    if (response.status == 400 || response.status == 404)
-                                        response.text().then(text => {
-                                            if (doAlert) {
-                                                window.loadingSetText(`Error:\n${text}`);
-                                                window.loadingShow();
-                                            };
-                                            throw text;
-                                        })
-                                    else {
-                                        callback(response);
-                                        if (doReload) {
-                                            scrollTo(0, 0);
-                                            location.reload();
-                                        };
-                                    };
-                                };
-                            })
-                    };
-                }, interval * i);
-                if (ok) { break; };
-            };
-        });
 };
 
 
@@ -68,7 +74,7 @@ export function request(method, endpoint, body, callback, interval=30, reload=tr
  * @param {function} callback - Callback to be passed path
  */
 export function open(callback) {
-    request(POST, "open/.../...", "", SILENT, 10, false);
+    request(POST, "open/.../...", "", SILENT, false, false);
     window._fileSelected = callback;
 };
 
@@ -88,5 +94,5 @@ export function openFolder(path, callback) {
  * @param {function} callback - Callback to be passed path
  */
 export function getPath(callback) {
-    request(POST, "getPath/.../...", "", (response) => response.text().then(callback));
+    request(POST, "getPath/.../...", "", callback);
 };

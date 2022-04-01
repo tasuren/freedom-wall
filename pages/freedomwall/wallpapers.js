@@ -17,7 +17,7 @@ import { request, SILENT, POST } from "./utils.js";
  * @param {function} callback - Callback to be passed wallpapers.
  */
 export function getWallpapers(callback) {
-    request(POST, "wallpapers/all/get", "", response => response.json().then(callback));
+    request(POST, "wallpapers/all/get", "", callback, true);
 };
 
 
@@ -44,12 +44,12 @@ export function updateWallpaper(name, data, mode, callback=SILENT, reload=true) 
     if (mode == "rename") {
         request(
             POST, `wallpapers/rename/update/${replaceSlash(name)}/${replaceSlash(data)}`,
-            "", callback, 10, reload
+            "", callback, false, reload
         )
     } else {
         request(
             POST, `wallpapers/one/update/${replaceSlash(name)}/${mode}`,
-            data ? JSON.stringify(data) : "", callback, 10, reload
+            data ? JSON.stringify(data) : "", callback, false, reload
         );
     };
 };

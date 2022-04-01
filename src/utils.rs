@@ -35,3 +35,9 @@ pub fn open_folder(path: String) {
             .status().unwrap();
     };
 }
+
+
+/// JavaScriptのテンプレートリテラルの文字列の中にそのまま埋め込んでも大丈夫なようにエスケープします。
+pub fn escape_for_js(text: String) -> String {
+    text.replace("\\", "\\\\").replace("`", "\\`")
+}

@@ -19,7 +19,7 @@ import { POST, request } from "./utils.js";
  * @param {function} callback - Callback to be passed data (`{"ExtensionName": Above data}`)
  */
 export function getExtensions(callback) {
-    request(POST, "extensions/all/get", "", response => response.json().then(callback));
+    request(POST, "extensions/all/get", "", callback, true);
 };
 
 
@@ -29,7 +29,7 @@ export function getExtensions(callback) {
  * @param {function} callback - Callback to be passed data
  */
 export function getExtension(name, callback) {
-    request(POST, `extensions/one/get/${name}`, "", response => response.json().then(callback));
+    request(POST, `extensions/one/get/${name}`, "", callback, true);
 };
 
 
@@ -48,5 +48,5 @@ export function updateExtensionSetting(name, data, callback) {
  * Reload extensions
  */
 export function reloadExtensions() {
-    request(POST, "extensions/reload/get", "", _ => { location.reload(); });
+    request(POST, "extensions/reload/get", "", _ => location.reload());
 };

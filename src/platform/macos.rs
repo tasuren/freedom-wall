@@ -45,7 +45,8 @@ pub struct Window {
     ns_window: *const Object,
     pub wallpaper: Wallpaper,
     pub target: String,
-    before_front: bool
+    before_front: bool,
+    pub id: usize
 }
 
 
@@ -191,10 +192,10 @@ pub fn get_windows() -> (Titles, ExtendedRects) {
 
 
 impl WindowTrait for Window {
-    fn new(wallpaper: Wallpaper, webview: WebView, target: String) -> Self {
+    fn new(wallpaper: Wallpaper, webview: WebView, id: usize, target: String) -> Self {
         let ns_window = webview.window().ns_window() as *const Object;
         let window = Self {
-            webview: webview, ns_window: ns_window,
+            webview: webview, ns_window: ns_window, id: id,
             wallpaper: wallpaper, target: target, before_front: false
         };
         window

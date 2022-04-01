@@ -73,6 +73,7 @@ pub struct Window {
     pub webview: WebView,
     pub wallpaper: Wallpaper,
     pub target: String,
+    pub id: usize,
     front: bool,
     hwnd: HWND,
     first: bool
@@ -91,9 +92,9 @@ fn set_order(hwnd: HWND, target: isize, more: u32) {
 
 
 impl WindowTrait for Window {
-    fn new(data: Wallpaper, webview: WebView, target: String) -> Self {
+    fn new(data: Wallpaper, webview: WebView, id: usize, target: String) -> Self {
         let window = Self {
-            hwnd: webview.window().hwnd() as _, webview: webview,
+            hwnd: webview.window().hwnd() as _, webview: webview, id: id,
             wallpaper: data, target: target, front: false, first: true
         };
         window.webview.window().set_skip_taskbar(true);

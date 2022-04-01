@@ -3,7 +3,7 @@
 use std::{
     path::PathBuf, fs::{ canonicalize, read }, time::Duration, thread,
     sync::mpsc::{ channel, Sender },
-    collections::HashMap, rc::Rc, cell::{ RefCell, RefMut }
+    collections::HashMap
 };
 
 use wry::{
@@ -37,18 +37,18 @@ pub struct Manager {
     pub data: DataManager,
     pub setting: Option<WebView>,
     pub proxy: EventLoopProxy<UserEvents>,
-    pub queues: Rc<RefCell<Vec<Queue>>>,
     pub is_setting: bool,
     pub file_dialog: Option<thread::JoinHandle<()>>,
     pub heartbeat_sender: Sender<f32>,
-    pub heartbeat: Option<thread::JoinHandle<()>>
+    pub heartbeat: Option<thread::JoinHandle<()>>,
+    pub count: usize
 }
 
 
 /// レスポンスキューです。
-pub struct Queue {
-    pub status: u16,
-    pub body: Vec<u8>
+pub struct CallbackResponse<'a> {
+    pub status: &'a str,
+    pub body: String
 }
 
 
@@ -105,38 +105,20 @@ fn request2response(request: &Request) -> Result<Response, Error> {
 
 /// リクエストをイベントでラップしてイベントループに送信します。
 /// APIリクエストの処理を実行するのはmain.rsにあるイベントループのイベントハンドラー内からです。
-/// (ライフタイムがどうたらこうたらの関係上設計がこうなっています。もし誰か対処法を知っているのなら教えてほしいです)
+/// (ライフタイムがどうたらこうたらの関係上設計こうなっており、もし誰か対処法を知っているのなら教えてほしいです。)
 fn request2waiter(
-    proxy: EventLoopProxy<UserEvents>, mut queues: RefMut<Vec<Queue>>, request: &Request
+    proxy: EventLoopProxy<UserEvents>, request: &Request
 ) -> Result<Response, Error> {
     if request.uri().starts_with("wry://api/") {
-        if request.uri().contains("reply") {
-            // リクエストの返信をあればする。
-            let mut replied = false;
-            let response = match queues.first() {
-                Some(queue) => {
-                    replied = true;
-                    ResponseBuilder::new()
-                        .header("Access-Control-Allow-Origin", "*")
-                        .status(queue.status).body(queue.body.clone())
-                }, _ => ResponseBuilder::new()
-                    .header("Access-Control-Allow-Origin", "*")
-                    .status(503).body(Vec::new())
-            };
-            // もし返信をするのなら最後の返信キューを削除する。
-            if replied { queues.remove(0); };
-            response
-        } else {
-            // APIリクエストのイベントを送信する。
-            let _ = proxy.send_event(UserEvents::Request(RequestData {
-                uri: request.uri().to_string(), body: String::from_utf8(request.body.clone())
-                    .unwrap_or("".to_string())
-            }));
-            ResponseBuilder::new()
-                .header("Access-Control-Allow-Origin", "*")
-                .status(201)
-                .body(Vec::new())
-        }
+        // APIリクエストのイベントを送信する。
+        let _ = proxy.send_event(UserEvents::Request(RequestData {
+            uri: request.uri().to_string(), body: String::from_utf8(request.body.clone())
+                .unwrap_or("".to_string())
+        }));
+        ResponseBuilder::new()
+            .header("Access-Control-Allow-Origin", "*")
+            .status(201)
+            .body(Vec::new())
     } else { request2response(request) }
 }
 
@@ -152,9 +134,8 @@ impl Manager {
         set_locale(&data.general.language);
         let (tx, rx) = channel();
         let mut manager = Self {
-            windows: Vec::new(), data: data, setting: None, proxy: proxy,
-            queues: Rc::new(RefCell::new(Vec::new())), is_setting: false,
-            file_dialog: None, heartbeat_sender: tx, heartbeat: None
+            windows: Vec::new(), data: data, setting: None, proxy: proxy, is_setting: false,
+            file_dialog: None, heartbeat_sender: tx, heartbeat: None, count: 0
         };
         // 設定画面のウィンドウを作る。
         manager.setting = Some(manager.make_setting_window(event_loop));
@@ -186,15 +167,13 @@ impl Manager {
             .with_title(format!("{} Setting", APPLICATION_NAME))
             .build(event_loop).expect("Failed to build the setting window.");
         let proxy = self.proxy.clone();
-        let cloned_queues = self.queues.clone();
         WebViewBuilder::new(window).unwrap()
             .with_custom_protocol(
-                "wry".into(), move |request| request2waiter(
-                    proxy.clone(), cloned_queues.borrow_mut(), request
-                )
+                "wry".into(), move |request| request2waiter(proxy.clone(), request)
             )
             .with_url("wry://pages/_home.html").unwrap()
             .with_devtools(true)
+            .with_initialization_script("window.__WINDOW_ID__ = 0;")
             .build().expect("Failed to build the setting webview.")
     }
 
@@ -203,6 +182,7 @@ impl Manager {
         &mut self, event_loop: &EventLoopWindowTarget<UserEvents>,
         data: Wallpaper, alpha: f64, target: String
     ) -> Result<(), String> {
+        self.count += 1;
         let window = WindowBuilder::new()
             .with_title(format!("{} - {} Wallpaper Window", APPLICATION_NAME, data.name))
             .with_decorations(false)
@@ -213,12 +193,9 @@ impl Manager {
         ) {
             Ok(url) => {
                 let proxy = self.proxy.clone();
-                let cloned_queues = self.queues.clone();
                 let webview = WebViewBuilder::new(window).unwrap()
                     .with_custom_protocol(
-                        "wry".into(), move |request| request2waiter(
-                            proxy.clone(), cloned_queues.borrow_mut(), request
-                        )
+                        "wry".into(), move |request| request2waiter(proxy.clone(), request)
                     )
                     .with_url(&url.to_string()).unwrap()
                     .with_initialization_script(&format!(
@@ -243,14 +220,15 @@ impl Manager {
                                 head.appendChild(script);
                             }};
                         }});
-                        window.__WINDOWS__ = {};{}",
+                        window.__WINDOWS__ = {};
+                        window.__WINDOW_ID__ = {};{}",
                         if self.data.extensions.is_empty() { "".to_string() }
                         else { format!(
                             "\"{}\"",
                             self.data.extensions.iter().map(|x| x.path.replace("\"", "\\\""))
                                 .collect::<Vec<String>>().join("\", \"")
                         ) }, if cfg!(target_os="windows") { "true" } else { "false" },
-                        if data.detail.forceSize {
+                        self.count.to_string(), if data.detail.forceSize {
                             "// ウィンドウのサイズに壁紙のサイズを合わせるためのスクリプトを実行する。
                             let resizeElement = function (element) {
                                 element.style.width = `${window.innerWidth}px`;
@@ -288,7 +266,8 @@ impl Manager {
                     .with_devtools(self.data.general.dev)
                     .build().expect("Failed to build the webview.");
 
-                let mut new = Window::new(data, webview, target);
+                let mut new = Window::new(data, webview, self.count, target);
+                // 下準備をする。
                 new.set_click_through(true);
                 new.set_transparent(alpha);
                 // 開発者モードが有効なら開発者ツールを表示する。
@@ -361,31 +340,25 @@ impl Manager {
     }
 
     /// APIリクエストを処理します。
-    pub fn on_request(&mut self, uri: &str, data: String) -> Queue {
+    pub fn on_request(&mut self, uri: &str, data: String) {
         // 色々整えたり下準備をする。
         let tentative_path = decode(
             &uri.replace("wry://api/", "").replace("?", "/")
         ).unwrap().to_string();
-        let path: Vec<&str> = tentative_path.split("/").collect();
-        let error = RefCell::new("Not found".to_string());
-        let borrowed = error.borrow();
-        let make_error = |body: Option<String>| Queue {
-            status: 400, body: match body {
-                Some(value) => value.bytes().collect(),
-                _ => borrowed.bytes().collect()
-            }
-        };
-
-        /* 以下は使わないと言い切れないコードなのでコメントアウトをしています。
-        let tentative_url = Url::parse(uri);
-        if let Err(_) = tentative_url { return make_error(); };
-        let url = tentative_url.unwrap();
-        */
-
-        let (ok, notfound) = (Ok("Ok".to_string()), Err("Not found".to_string()));
+        let mut path: Vec<&str> = tentative_path.split("/").collect();
 
         let length = path.len();
-        if length < 3 { return make_error(None); };
+        println!("{:?}", path);
+        assert!(length >= 5);
+
+        let (ok, notfound) = (Ok("Ok".to_string()), Err("Not found".to_string()));
+        let make_error = |body: String| CallbackResponse {
+            status: "400", body: body
+        };
+
+        let window_id: usize = path.remove(0).parse().unwrap();
+        let request_id = path.remove(0);
+
         let mut write_mode = "";
         let is_update = path[2] == "update";
 
@@ -586,6 +559,7 @@ impl Manager {
         };
 
         // もしデータ書き込みが必要なら書き込む。
+        // 一部はその時その時にやる。
         if is_update && !write_mode.is_empty() {
             match write_mode {
                 "general" => self.data.write_setting(),
@@ -594,10 +568,30 @@ impl Manager {
         };
 
         // レスポンスデータをまとめる。
-        match tentative {
-            Ok(response_data) => Queue { status: 200, body: response_data.bytes().collect() },
-            _ => make_error(Some(tentative.err().unwrap()))
-        }
+        let response = match tentative {
+            Ok(response_data) => CallbackResponse {
+                status: "200", body: response_data
+            },
+            _ => make_error(tentative.err().unwrap())
+        };
+
+        // レスポンスをJavaScriptのコールバックで送る。
+        let js = &format!(
+            "window.__callbacks__['{}']({}, `{}`);",
+            request_id, response.status,
+            utils::escape_for_js(response.body.clone())
+        );
+        if window_id == 0 {
+            if let Some(webview) = &self.setting {
+                webview.evaluate_script(js).unwrap();
+            };
+        } else {
+            for window in self.windows.iter() {
+                if window.id == window_id {
+                    window.webview.evaluate_script(js).unwrap();
+                };
+            };
+        };
     }
 
     fn get_windows_range(&mut self) -> Vec<usize> {
@@ -609,6 +603,7 @@ impl Manager {
     /// ウィンドウを閉じます。
     pub fn remove(&mut self, index: usize) {
         println!("Remove window: {}", self.windows[index].target);
+        self.count -= 1;
         self.windows[index].webview.evaluate_script(
             "window.close();"
         ).unwrap();
