@@ -191,14 +191,12 @@ pub fn get_windows() -> (Titles, ExtendedRects) {
 
 
 impl WindowTrait for Window {
-    fn new(wallpaper: Wallpaper, webview: WebView, alpha: f64, target: String) -> Self {
+    fn new(wallpaper: Wallpaper, webview: WebView, target: String) -> Self {
         let ns_window = webview.window().ns_window() as *const Object;
         let window = Self {
             webview: webview, ns_window: ns_window,
             wallpaper: wallpaper, target: target, before_front: false
         };
-        new.set_click_through(true);
-        window.set_transparent(alpha);
         window
     }
 

@@ -46,11 +46,13 @@ unsafe extern "system" fn lpenumfunc(hwnd: HWND, _: LPARAM) -> BOOL {
         &mut rect as *mut RECT as *mut _,
         size_of::<RECT>() as u32
     );
+
     DATA.1.push((
         vec![rect.left, rect.top, rect.right, rect.bottom],
         GetForegroundWindow() == hwnd, BEFORE
     ));
     if hwnd != 0 { BEFORE = hwnd; };
+
     true.into()
 }
 
@@ -90,13 +92,11 @@ fn set_order(hwnd: HWND, target: isize, more: u32) {
 
 
 impl WindowTrait for Window {
-    fn new(data: Wallpaper, webview: WebView, alpha: f64, target: String) -> Self {
+    fn new(data: Wallpaper, webview: WebView, target: String) -> Self {
         let mut window = Self {
             hwnd: webview.window().hwnd() as _, webview: webview,
             wallpaper: data, target: target, front: false, first: true
         };
-        window.set_click_through(true);
-        window.set_transparent(alpha);
         window.webview.window().set_skip_taskbar(true);
         window
     }
@@ -114,9 +114,6 @@ impl WindowTrait for Window {
                 left: left, top: top,
                 right: right, bottom: bottom
             };
-            //println!("{} {} {} {}", rect.left, rect.top,
-            //(rect.right - rect.left).abs(),
-            //(rect.bottom - rect.top).abs());
             // ウィンドウの位置等を更新する。
             MoveWindow(
                 self.hwnd, rect.left, rect.top,
@@ -124,13 +121,6 @@ impl WindowTrait for Window {
                 (rect.bottom - rect.top).abs(),
                 1
             );
-            /*SetWindowPos(
-                self.hwnd, HWND::default(),
-                rect.left, rect.top,
-                (rect.right - rect.left).abs(),
-                (rect.bottom - rect.top).abs(),
-                0x0004 | 0x0010
-            );*/
         };
         self.webview.resize().unwrap();
     }

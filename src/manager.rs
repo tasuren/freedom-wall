@@ -287,8 +287,13 @@ impl Manager {
                         } else { "" }))
                     .with_devtools(self.data.general.dev)
                     .build().expect("Failed to build the webview.");
-                let new = Window::new(data, webview, alpha, target);
+
+                let mut new = Window::new(data, webview, target);
+                new.set_click_through(true);
+                new.set_transparent(alpha);
+                // 開発者モードが有効なら開発者ツールを表示する。
                 if self.data.general.dev { new.webview.open_devtools(); };
+
                 self.windows.push(new);
             Ok(())
             }, _ => Err(t!("core.general.processQueryParameterFailed"))
