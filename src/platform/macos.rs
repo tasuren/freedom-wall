@@ -8,7 +8,10 @@ use std::{
 
 use wry::{
     webview::WebView,
-    application::platform::macos::WindowExtMacOS
+    application::{
+        platform::macos::WindowExtMacOS,
+        dpi::{ LogicalPosition, LogicalSize }
+    }
 };
 
 use objc::{
@@ -194,6 +197,7 @@ impl WindowTrait for Window {
             webview: webview, ns_window: ns_window,
             wallpaper: wallpaper, target: target, before_front: false
         };
+        new.set_click_through(true);
         window.set_transparent(alpha);
         window
     }
@@ -202,6 +206,18 @@ impl WindowTrait for Window {
         unsafe {
             let _: () = msg_send![self.ns_window, setAlphaValue: alpha];
         };
+    }
+
+    fn set_rect(&self, width: i32, height: i32, x: i32, y: i32) {
+        let window = self.webview.window();
+        // 背景ウィンドウのサイズを変える。
+        window.set_inner_size::<LogicalSize<i32>>(
+            LogicalSize {width: width, height: height}
+        );
+        // 背景ウィンドウの位置を移動する。
+        window.set_outer_position::<LogicalPosition<i32>>(
+            LogicalPosition { x: x, y: y }
+        );
     }
 
     fn set_front(&mut self, front: bool) {
@@ -229,6 +245,4 @@ impl WindowTrait for Window {
             ];
         };
     }
-
-    fn get_webview(&self) -> &WebView { &self.webview }
 }

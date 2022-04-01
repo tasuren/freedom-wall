@@ -70,7 +70,7 @@ pub enum UserEvents {
 /// リクエストから適切なファイルを探し出しそれを返します。
 fn request2response(request: &Request) -> Result<Response, Error> {
     #[cfg(target_os="windows")]
-    let raw = request.uri().replace("c//", "/");
+    let raw = request.uri().replace("wry://c//", "file:///c:/");
     #[cfg(target_os="windows")]
     let uri = &raw;
     #[cfg(target_os="macos")]
@@ -88,8 +88,7 @@ fn request2response(request: &Request) -> Result<Response, Error> {
                         Some(mime) => {
                             test = format!("{}/{}", mime.type_(), mime.subtype());
                             &test
-                        },
-                        _ => "text/plain"
+                        }, _ => "text/plain"
                     }
                 )
                 .status(200)
@@ -243,13 +242,14 @@ impl Manager {
     
                                 head.appendChild(script);
                             }};
-                        }});{}",
+                        }});
+                        window.__WINDOWS__ = {};{}",
                         if self.data.extensions.is_empty() { "".to_string() }
                         else { format!(
                             "\"{}\"",
                             self.data.extensions.iter().map(|x| x.path.replace("\"", "\\\""))
                                 .collect::<Vec<String>>().join("\", \"")
-                        ) },
+                        ) }, if cfg!(target_os="windows") { "true" } else { "false" },
                         if data.detail.forceSize {
                             "// ウィンドウのサイズに壁紙のサイズを合わせるためのスクリプトを実行する。
                             let resizeElement = function (element) {
@@ -258,6 +258,7 @@ impl Manager {
                             };
                             let resize = function () {
                                 for (let element of document.getElementsByClassName('background')) {
+                                    console.log(element);
                                     resizeElement(element);
                                 };
                                 if (window.__backgrounds__)
@@ -286,8 +287,8 @@ impl Manager {
                         } else { "" }))
                     .with_devtools(self.data.general.dev)
                     .build().expect("Failed to build the webview.");
-                let mut new = Window::new(data, webview, alpha, target);
-                new.set_click_through(!self.data.general.dev);
+                let new = Window::new(data, webview, alpha, target);
+                if self.data.general.dev { new.webview.open_devtools(); };
                 self.windows.push(new);
             Ok(())
             }, _ => Err(t!("core.general.processQueryParameterFailed"))
@@ -316,7 +317,6 @@ impl Manager {
                                 && &window.target == title {
                             // もし対象のウィンドウなら背景ウィンドウのサイズの変更や移動をさせたりする。
                             window.set_front(main);
-                            //println!("{:?}", &rect);
                             window.set_rect_from_vec(&rect);
                             window.set_order(extra);
                             done.push(window.webview.window().id());
@@ -424,6 +424,7 @@ impl Manager {
                     // 開発者モードをONにするかどうか。
                     "dev" => if is_update {
                         self.data.general.dev = if data == "1" { true } else { false };
+                        self.reset_windows();
                         ok
                     } else { Ok((self.data.general.dev as usize).to_string()) },
                     _ => notfound
@@ -562,7 +563,7 @@ impl Manager {
                 let cloned = self.proxy.clone();
                 self.file_dialog = Some(thread::spawn(move || {
                     let _ = cloned.send_event(UserEvents::FileSelected(match FileDialog::new().pick_file() {
-                        Some(path) => path.to_str().unwrap().to_string(),
+                        Some(path) => path.as_path().display().to_string(),
                         _ => { utils::error(&t!("core.setting.failedRead")); panic!("Error occurred."); }
                     }));
                     ()
@@ -623,6 +624,7 @@ impl Manager {
             let _ = self.heartbeat_sender.send(0.0);
             handle.join().expect("Failed to join heartbeat thread.");
         };
+        self.data.general.wallpapers = Vec::new();
         self.reset_windows();
     }
 }

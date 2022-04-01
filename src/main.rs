@@ -52,7 +52,8 @@ fn main() {
                 Event::UserEvent(UserEvents::FileSelected(path)) => {
                     // ファイルダイアログによりファイルが選択された場合はJavaScriptのコールバックを呼び出してWebViewにパスを渡す。
                     manager.setting.as_ref().unwrap().evaluate_script(&format!(
-                        "window._fileSelected(`{}`)", path.replace("`", "\\`")
+                        "window._fileSelected(`{}`);", path
+                            .replace("`", "\\`").replace("\\", "\\\\")
                     )).unwrap();
                     manager.file_dialog = None;
                 },

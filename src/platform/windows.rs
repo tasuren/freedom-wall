@@ -1,8 +1,12 @@
 //! FreedomWall - Impl for Windows
 
+use std::mem::size_of;
+
 use wry::{
     webview::WebView,
-    application::platform::windows::WindowExtWindows
+    application::{
+        platform::windows::WindowExtWindows
+    }
 };
 
 use windows_sys::Win32::{
@@ -10,7 +14,12 @@ use windows_sys::Win32::{
     UI::WindowsAndMessaging::{
         EnumWindows, SetLayeredWindowAttributes, SetWindowPos,
         SetWindowLongA, GetWindowTextW, GetWindowRect,
-        GetForegroundWindow
+        GetForegroundWindow, MoveWindow,
+        AdjustWindowRectEx, GetWindowLongW
+    },
+    Graphics::Dwm::{
+        DwmGetWindowAttribute,
+        DWMWA_EXTENDED_FRAME_BOUNDS
     }
 };
 
@@ -32,10 +41,13 @@ unsafe extern "system" fn lpenumfunc(hwnd: HWND, _: LPARAM) -> BOOL {
     DATA.0.push(String::from_utf16_lossy(&raw[..length as usize]).to_string());
     // ウィンドウのサイズ等を取得する。
     let mut rect = RECT { left: 0, top: 0, right: 0, bottom: 0 };
-    GetWindowRect(hwnd, &mut rect as *mut RECT);
-    if GetForegroundWindow() == hwnd { println!("{:?}", (rect.bottom - rect.top, rect.right - rect.left, rect.left, rect.top)); };
+    DwmGetWindowAttribute(
+        hwnd, DWMWA_EXTENDED_FRAME_BOUNDS,
+        &mut rect as *mut RECT as *mut _,
+        size_of::<RECT>() as u32
+    );
     DATA.1.push((
-        vec![rect.right - rect.left, rect.bottom - rect.top, rect.left, rect.top],
+        vec![rect.left, rect.top, rect.right, rect.bottom],
         GetForegroundWindow() == hwnd, BEFORE
     ));
     if hwnd != 0 { BEFORE = hwnd; };
@@ -61,7 +73,19 @@ pub struct Window {
     pub wallpaper: Wallpaper,
     pub target: String,
     front: bool,
-    hwnd: HWND
+    hwnd: HWND,
+    first: bool
+}
+
+
+/// SetWindowPosでウィンドウのZ順の位置を変更します。
+fn set_order(hwnd: HWND, target: isize, more: u32) {
+    unsafe {
+        SetWindowPos(
+            hwnd, target, 0, 0, 0, 0,
+            0x0010 | 0x0001 | 0x0002 | more
+        );
+    };
 }
 
 
@@ -69,10 +93,11 @@ impl WindowTrait for Window {
     fn new(data: Wallpaper, webview: WebView, alpha: f64, target: String) -> Self {
         let mut window = Self {
             hwnd: webview.window().hwnd() as _, webview: webview,
-            wallpaper: data, target: target, front: false
+            wallpaper: data, target: target, front: false, first: true
         };
         window.set_click_through(true);
         window.set_transparent(alpha);
+        window.webview.window().set_skip_taskbar(true);
         window
     }
 
@@ -82,27 +107,49 @@ impl WindowTrait for Window {
         }, 1);
     }
 
+    fn set_rect(&self, left: i32, top: i32, right: i32, bottom: i32) {
+        unsafe {
+            // Rectを調整する。
+            let rect = RECT {
+                left: left, top: top,
+                right: right, bottom: bottom
+            };
+            //println!("{} {} {} {}", rect.left, rect.top,
+            //(rect.right - rect.left).abs(),
+            //(rect.bottom - rect.top).abs());
+            // ウィンドウの位置等を更新する。
+            MoveWindow(
+                self.hwnd, rect.left, rect.top,
+                (rect.right - rect.left).abs(),
+                (rect.bottom - rect.top).abs(),
+                1
+            );
+            /*SetWindowPos(
+                self.hwnd, HWND::default(),
+                rect.left, rect.top,
+                (rect.right - rect.left).abs(),
+                (rect.bottom - rect.top).abs(),
+                0x0004 | 0x0010
+            );*/
+        };
+        self.webview.resize().unwrap();
+    }
+
     fn set_front(&mut self, front: bool) {
         if front != self.front {
             self.front = front;
             println!("Front changed [{}]: {}", self.target, front);
-            assert_eq!(unsafe {
-                SetWindowPos(
-                    self.hwnd, if front { -1 } else { -2 },
-                    0, 0, 0, 0, 0x0010 | 0x0002 | 0x0001
-                )
-            }, 1);
+            if self.first && front {
+                self.webview.window().set_focus();
+                self.first = false;
+            };
+            set_order(self.hwnd, if front { -1 } else { -2 }, 0);
         };
     }
 
     fn set_order(&mut self, target: isize) {
         if !self.front && target != 0 {
-            assert_eq!(unsafe {
-                SetWindowPos(
-                    self.hwnd, target,
-                    0, 0, 0, 0, 0x0010 | 0x0002 | 0x0001
-                )
-            }, 1);
+            set_order(self.hwnd, target, 0);
         };
     }
 
@@ -116,6 +163,4 @@ impl WindowTrait for Window {
             )
         } != 0);
     }
-
-    fn get_webview(&self) -> &WebView { &self.webview }
 }

@@ -31,6 +31,7 @@ pub fn open_folder(path: String) {
             .arg(path).status().unwrap();
     } else if cfg!(target_os="windows") {
         Command::new("explorer")
-            .arg(path).status().unwrap();
+            .arg(path.replace("/", "\\"))
+            .status().unwrap();
     };
 }
