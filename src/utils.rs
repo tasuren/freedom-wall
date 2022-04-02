@@ -38,9 +38,16 @@ pub fn open_folder(path: String) {
 
 
 /// ウェブサイトを開きます。
+#[cfg(target_os="windows")]
 pub fn open_website(url: String) {
-    Command::new(if cfg!(target_os="macos") { "open" } else { "cmd" })
-        .arg("/c").arg("start").arg(url).status().unwrap();
+    Command::new("cmd")
+        .arg("/c").arg("start").arg(url)
+        .status().unwrap();
+}
+#[cfg(target_os="macos")]
+pub fn open_website(url: String) {
+    Command::new("open")
+        .arg(url).status().unwrap();
 }
 
 
