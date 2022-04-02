@@ -1,3 +1,6 @@
 {% macro lib(name, copy, url) %}
-<li><a onclick="window._openWebsite(`{{ url }}`);">{{ name }}</a> - <code>{{ copy }}</code></li>
+<li><a onclick="window._openWebsite(`{{ url }}`);" href="#">{{ name }}</a> - <code>{{ copy }}</code></li>
+{% endmacro lib %}
+{% macro a(inner, url) %}
+<a onclick="window._openWebsite(`{{ url }}`);" href="#">{{ inner }}</a>
 {% endmacro lib %}

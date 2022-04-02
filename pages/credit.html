@@ -16,10 +16,10 @@
     tasuren
     <h3>リンク</h3>
     <ul>
-      <li><a href="http://tasuren.f5.si">WebSite</a></li>
-      <li><a href="https://github.com/tasuren">GitHub</a></li>
-      <li><a href="https://twitter.com/tasuren1">Twitter</a></li>
-      <li><a href="https://www.buymeacoffee.com/tasuren">Buy Me a Coffee</a></li>
+      <li>{{ macros::a(inner="WebSite", url="http://tasuren.f5.si") }}</li>
+      <li>{{ macros::a(inner="GitHub", url="https://github.com/tasuren") }}</li>
+      <li>{{ macros::a(inner="Twitter", url="https://twitter.com/tasuren1") }}</li>
+      <li>{{ macros::a(inner="Buy Me a Coffee", url="https://www.buymeacoffee.com/tasuren") }}</li>
     </ul>
     <h2>謝辞</h2>
     以下はFreedomWallで使用しているライブラリです。<br>
@@ -29,17 +29,17 @@
     tasuren
     <h3>Link</h3>
     <ul>
-      <li><a href="http://tasuren.f5.si">WebSite</a></li>
-      <li><a href="https://github.com/tasuren">GitHub</a></li>
-      <li><a href="https://twitter.com/tasuren1">Twitter</a></li>
-      <li><a href="https://www.buymeacoffee.com/tasuren">Buy Me a Coffee</a></li>
+      <li>{{ macros::a(inner="WebSite", url="http://tasuren.f5.si") }}</li>
+      <li>{{ macros::a(inner="GitHub", url="https://github.com/tasuren") }}</li>
+      <li>{{ macros::a(inner="Twitter", url="https://twitter.com/tasuren1") }}</li>
+      <li>{{ macros::a(inner="Buy Me a Coffee", url="https://www.buymeacoffee.com/tasuren") }}</li>
     </ul>
     <h2>Acknowledgments</h2>
     Below are the libraries used by FreedomWall.<br>
   </div>
   <h3>Rust</h3>
-  <p class="language ja">以下のライブラリは<a href="https://crates.io">crates.io</a>にあるものです。</p>
-  <p class="language en">Library at <a href="https://crates.io">crates.io</a>.</p>
+  <p class="language ja">以下のライブラリは{{ macros::a(url="https://crates.io", inner="crates.io") }}にあるものです。</p>
+  <p class="language en">Library at {{ macros::a(url="https://crates.io", inner="crates.io") }}.</p>
   <h4 class="language ja">一般</h4>
   <h4 class="language en">General</h4>
   <ul>

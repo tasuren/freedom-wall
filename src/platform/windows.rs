@@ -13,8 +13,7 @@ use windows_sys::Win32::{
     Foundation::{ HWND, LPARAM, BOOL, RECT },
     UI::WindowsAndMessaging::{
         EnumWindows, SetLayeredWindowAttributes, SetWindowPos,
-        SetWindowLongA, GetWindowTextW,
-        GetForegroundWindow, MoveWindow
+        SetWindowLongA, GetWindowTextW, GetForegroundWindow, MoveWindow
     },
     Graphics::Dwm::{
         DwmGetWindowAttribute,
@@ -116,9 +115,9 @@ impl WindowTrait for Window {
             };
             // ウィンドウの位置等を更新する。
             MoveWindow(
-                self.hwnd, rect.left, rect.top,
-                (rect.right - rect.left).abs(),
-                (rect.bottom - rect.top).abs(),
+                self.hwnd, rect.left + shift.left, rect.top + shift.up,
+                (rect.right - rect.left).abs() + shift.right,
+                (rect.bottom - rect.top).abs() + shift.down,
                 1
             );
         };
