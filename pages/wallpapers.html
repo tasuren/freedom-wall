@@ -94,10 +94,12 @@
     };
   };
 
-  window._addWallpaper = function (template) {
+  window._addWallpaper = function () {
     // 壁紙を追加する。
-    let input = document.getElementById("new-wallpaper-name");
-    postWallpaper(template, input.value || template);
+    postWallpaper(
+      document.getElementById("add-wallpapers").value,
+      document.getElementById("new-wallpaper-name").value || template
+    );
   };
 
   window._open = function (name) {
@@ -138,12 +140,12 @@
       Here it is possible to register, delete and edit the wallpaper to be used.
     </div>
     <br>
-    <label for="add-wallpapers" class="language en">Add:</label>
-    <label for="add-wallpapers" class="language ja">追加：</label>
     <input type="text" placeholder="Name | 名前" id="new-wallpaper-name">
-    <select onchange="window._addWallpaper(this.value);" name="add-wallpapers" id="add-wallpapers">
+    <select name="add-wallpapers" id="add-wallpapers">
       <option value="..." selected>...</option>
     </select>
+    <button type="button" class="language ja" onclick="window._addWallpaper();">追加</button>
+    <button type="button" class="language en" onclick="window._addWallpaper();">Add</button>
     <br>
     <ul id="wallpapers">
     </ul>
