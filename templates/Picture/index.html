@@ -9,12 +9,16 @@
   <script>
     window.addEventListener("load", function () {
       const PARAMS = (new URL(location)).searchParams;
-      document.getElementById("background").setAttribute("src", PARAMS.get("imagePath"));
+      document.getElementById("background").setAttribute(
+        "src", window.__WINDOWS__ ?
+          `https://wry.${PARAMS.get("imagePath")}`.replace(/\\/g, "/").replace("C:/", "c://")
+            : PARAMS.get("imagePath")
+      );
     });
   </script>
 <body>
   <div id="background-container">
-    <img class="background" id="background" src="" />
+    <img class="background" id="background" src="" style="width: 0px; height: 0px;" />
   </div>
 </body>
 </html>
