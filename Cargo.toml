@@ -8,9 +8,7 @@ readme = "README.md"
 license-file = "LICENSE"
 homepage = "https://freedomwall.f5.si"
 repository = "https://github.com/tasuren/FreedomWall"
-keywords = ["app"]
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+keywords = ["application"]
 
 [target.'cfg(target_os="macos")'.dependencies]
 objc = "0.2.7"
@@ -40,13 +38,7 @@ rust-i18n = "0.5.1"
 [build-dependencies]
 tera = "1.15.0"
 
-[profile.dev]
-opt-level = 0
-
-[profile.release]
-opt-level = 3
-
 [package.metadata.i18n]
 available-locales = ["en", "ja"]
 default-locale = "en"
-load-path = "locales/app"
+load-path = "src/locales"

@@ -49,7 +49,7 @@ pub fn add_setting_path(path: &str) -> Result<String, String> {
 
 
 /// 壁紙プロファイルの設定ファイルである`data.json`の構造体です。
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct WallpaperJson {
     pub author: String,
     pub description: String,
@@ -59,11 +59,21 @@ pub struct WallpaperJson {
 
 
 /// 壁紙の設定データの構造体です。
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct Wallpaper {
     pub name: String,
     pub path: String,
     pub detail: WallpaperJson
+}
+
+
+/// 壁紙ウィンドウのサイズ調整用のデータです。
+#[derive(Serialize, Deserialize, Clone)]
+pub struct Shift {
+    pub up: i32,
+    pub down: i32,
+    pub left: i32,
+    pub right: i32
 }
 
 
@@ -73,7 +83,8 @@ pub struct Target {
     pub targets: Vec<String>,
     pub exceptions: Vec<String>,
     pub alpha: f64,
-    pub wallpaper: String
+    pub wallpaper: String,
+    pub shift: Shift
 }
 
 
@@ -146,7 +157,7 @@ fn get_name<'a>(path: &'a PathBuf) -> &'a str {
 }
 
 
-/// 指定されたパスのフォルダにあるすべてのフォルダkらあファイル検索を行います。
+/// 指定されたパスのフォルダにあるすべてのフォルダからファイル検索を行います。
 /// また、on_found引数でファイルの読み込み処理等も行うこともできます。
 /// on_foundに渡されるものは左から順にフォルダのパス,フォルダのPathBuf,ファイル名,ファイルのパス
 fn search_files<F: Fn(String, &PathBuf, &str, &String) -> ()>(

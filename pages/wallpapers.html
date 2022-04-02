@@ -11,7 +11,7 @@
   window.onload = function () {
     let languageSelect = document.getElementById("language");
     let params = (new URL(location)).searchParams;
-    if (params.get("wallpaper")) {
+    if (params.has("wallpaper")) {
       // 壁紙一つの設定画面の場合
       document.getElementById("normal").hidden = true;
       let div = document.getElementById("wallpaperSetting");
@@ -28,7 +28,7 @@
           <label for="wallpaperName" class="language ja">名前</label>
           <label for="wallpaperName" class="language en">Name</label>
           <br>
-          <input type="text" name="wallpaperName" data-name="name" class="wallpaperSetting" value="${escapedName}"></input>
+          <input type="text" name="wallpaperName" data-name="name" class="wallpaperSetting" value="${escapedName}">
           <br>
           <label for="wallpaperAuthor" class="language ja">作者</label>
           <label for="wallpaperAuthor" class="language en">Author</label>
@@ -49,7 +49,7 @@
               let name = window.escapeHTML(key);
               return `
                 <label for="wallpaperSetting-${name}">${name}</label>
-                <input type="text" name="wallpaperSetting-${name}" data-name="${name}" class="wallpaperSetting detail" id="wallpaperSetting-${name}" data-name="setting" value="${value}"></input>
+                <input type="text" name="wallpaperSetting-${name}" data-name="${name}" class="wallpaperSetting detail" id="wallpaperSetting-${name}" data-name="setting" value="${value}">
                 ${key.toLowerCase().endsWith("path") ? `<button type="button" name="${name}" onclick="window._open(this.name);">Select</button>` : ""}
               `;
             }).join("<br>")}
@@ -57,7 +57,7 @@
           <label for="wallpaperForceSize" class="language ja">サイズ強制</label>
           <label for="wallpaperForceSize" class="language en">Force adjustment size</label>
           <br>
-          <input type="checkbox" class="wallpaperSetting" data-name="forceSize" name="wallpaperForceSize"${wallpaper.forceSize ? " checked" : ""}></input>
+          <input type="checkbox" class="wallpaperSetting" data-name="forceSize" name="wallpaperForceSize"${wallpaper.forceSize ? " checked" : ""}>
           <br><br>
           <button type="button" onclick="window._save('${escapedName}');" class="language ja">保存</button>
           <button type="button" onclick="window._save('${escapedName}');" class="language en">Save</button>
@@ -140,7 +140,7 @@
     <br>
     <label for="add-wallpapers" class="language en">Add:</label>
     <label for="add-wallpapers" class="language ja">追加：</label>
-    <input type="text" placeholder="Name | 名前" id="new-wallpaper-name"></input>
+    <input type="text" placeholder="Name | 名前" id="new-wallpaper-name">
     <select onchange="window._addWallpaper(this.value);" name="add-wallpapers" id="add-wallpapers">
       <option value="..." selected>...</option>
     </select>

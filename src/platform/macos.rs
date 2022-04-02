@@ -35,7 +35,7 @@ use core_foundation::{
 };
 
 use super::super::{
-    data_manager::Wallpaper, window::WindowTrait,
+    data_manager::{ Wallpaper, Shift }, window::WindowTrait,
     platform::{ Titles, ExtendedRects }
 };
 
@@ -158,16 +158,14 @@ pub fn get_windows() -> (Titles, ExtendedRects) {
             let rect = match get_cfdictionary_value_from_str(
                 data, "kCGWindowBounds"
             ) { Some(value) => value as CFDictionaryRef, _ => continue };
-            let mut tentative: Vec<i32> = Vec::new();
+            let mut tentative = [0 as i32; 4];
 
             let mut update = false;
             for (i, key) in ["Width", "Height", "X", "Y"].iter().enumerate() {
-                tentative.push(
-                    get_cfnumber(
-                        get_cfdictionary_value_from_str(rect, key)
-                            .expect("CFDictionaryからkCGWindowBoundsの値を取り出すのに失敗しました。")
-                    ).expect("CFNumberの値の取り出しに失敗しました。")
-                );
+                tentative[i] = get_cfnumber(
+                    get_cfdictionary_value_from_str(rect, key)
+                        .expect("CFDictionaryからkCGWindowBoundsの値を取り出すのに失敗しました。")
+                ).expect("CFNumberの値の取り出しに失敗しました。");
                 if !windows_rect.is_empty() || !same_before
                         || windows_rect[before_index].0[i] < tentative[i] {
                     // 一番サイズのでかいウィンドウが対象になるように前取得したやつをチェックする。
@@ -182,7 +180,7 @@ pub fn get_windows() -> (Titles, ExtendedRects) {
                         data, "kCGWindowNumber"
                     ).expect("CFDictionaryからkCGWindowNumberの値を取り出すのに失敗しました。")
                 ).expect("CFNumberの値の取り出しに失敗しました。") as isize));
-                if next_main && !title.contains("FreedomWall") { next_main = false; };
+                if next_main { next_main = false; };
                 windows_name.push(title);
             };
         };
@@ -207,15 +205,15 @@ impl WindowTrait for Window {
         };
     }
 
-    fn set_rect(&self, width: i32, height: i32, x: i32, y: i32) {
+    fn set_rect(&self, shift: &Shift, width: i32, height: i32, x: i32, y: i32) {
         let window = self.webview.window();
         // 背景ウィンドウのサイズを変える。
         window.set_inner_size::<LogicalSize<i32>>(
-            LogicalSize {width: width, height: height}
+            LogicalSize { width: width + shift.right, height: height + shift.down }
         );
         // 背景ウィンドウの位置を移動する。
         window.set_outer_position::<LogicalPosition<i32>>(
-            LogicalPosition { x: x, y: y }
+            LogicalPosition { x: x + shift.left, y: y + shift.up }
         );
     }
 

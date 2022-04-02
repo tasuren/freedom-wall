@@ -42,15 +42,14 @@ export function request(method, endpoint, body, callback, isResponseJson=false, 
 
     // コールバックを設定する。
     window.__callbacks__[request_count] = function (status, data) {
+        scrollTo(0, 0);
+        if (reload && window.loadingShow) window.loadingShow();
         if (status < 400) {
             callback(isResponseJson ? JSON.parse(data) : data);
-            if (reload) {
-                scrollTo(0, 0);
-                location.reload();
-            };
+            if (reload) location.reload();
         } else {
             if (window.loadingShow) {
-                window.loadingSetText();
+                window.loadingSetText(data);
                 window.loadingShow();
             };
             throw data;
@@ -86,6 +85,16 @@ export function open(callback) {
  */
 export function openFolder(path, callback) {
     request(POST, "openFolder/.../...", path, (_) => callback());
+};
+
+
+/**
+ * Open website
+ * @param {string} path - Path to folder
+ * @param {function} callback - Callback to be called when opened
+ */
+ export function openWebsite(path, callback) {
+    request(POST, "openWebsite/.../...", path, (_) => callback());
 };
 
 

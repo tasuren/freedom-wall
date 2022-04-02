@@ -26,6 +26,7 @@ pub const VERSION: &str = "2.0.0a";
 pub const APPLICATION_NAME: &str = "FreedomWall";
 
 
+#[cfg(any(target_os="macos", target_os="windows"))]
 fn main() {
     let event_loop: EventLoop<UserEvents> = EventLoop::with_user_event();
     let manager_option = Manager::new(&event_loop, event_loop.create_proxy());
@@ -72,3 +73,7 @@ fn main() {
         });
     };
 }
+
+
+#[cfg(target_os="linux")]
+fn main() { panic!("Linux is not supported now."); }

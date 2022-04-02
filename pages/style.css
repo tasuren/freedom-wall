@@ -4,29 +4,33 @@
 body {
   padding: 0; margin: 0;
 	font-family: Consolas,monaco,monospace;
+  height: 100%;
 }
+html { height: 100%; }
 
 
 .container {
-  display: -webkit-flex;
+  overflow-wrap: break-word;
   display: flex;
-  word-break: break-all;
-  padding: 0; margin: 0;
-  align-items: stretch;
+  min-height: 100%;
 }
 
 .menu {
   width: 20%;
-  height: 100%;
   padding: 3%;
   background-color: #e9eef3;
 }
 
 .content {
   width: 80%;
-  height: 100%;
   padding: 3%;
+  overflow: auto;
 }
+
+
+table { width: 100%; }
+td input { width: 95%; clear: both; }
+
 
 #fullOverlay {
   position: absolute;

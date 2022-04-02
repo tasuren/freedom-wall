@@ -4,7 +4,7 @@ ja:
   core.general.processQueryParameterFailed: クエリパラメータの処理に失敗しました。
   core.general.searchWallpaperFailed: 壁紙探しに失敗しました。
   core.setting.createSettingFolderFailed: "%{path}というフォルダの作成に失敗しました。"
-  core.setting.failedRead: "%{path}が見つかりませんでした。"
+  core.setting.failedRead: "%{path}の読み込みに失敗しました。。"
   core.setting.failedWrite: "%{path}へのデータ書き込みに失敗しました。"
   core.setting.getSettingPathFailed: 設定フォルダのパスが見つかりませんでした。
   core.setting.settingPathNotFound: 設定フォルダのパスが見つかりませんでした。

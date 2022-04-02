@@ -23,7 +23,7 @@ use windows_sys::Win32::{
 };
 
 use super::super::{
-    data_manager::Wallpaper, window::WindowTrait,
+    data_manager::{ Wallpaper, Shift }, window::WindowTrait,
     platform::{ Titles, ExtendedRects }
 };
 
@@ -47,7 +47,7 @@ unsafe extern "system" fn lpenumfunc(hwnd: HWND, _: LPARAM) -> BOOL {
     );
 
     DATA.1.push((
-        vec![rect.left, rect.top, rect.right, rect.bottom],
+        [rect.left, rect.top, rect.right, rect.bottom],
         GetForegroundWindow() == hwnd, BEFORE
     ));
     if hwnd != 0 { BEFORE = hwnd; };
@@ -107,7 +107,7 @@ impl WindowTrait for Window {
         }, 1);
     }
 
-    fn set_rect(&self, left: i32, top: i32, right: i32, bottom: i32) {
+    fn set_rect(&self, shift: &Shift, left: i32, top: i32, right: i32, bottom: i32) {
         unsafe {
             // Rectを調整する。
             let rect = RECT {

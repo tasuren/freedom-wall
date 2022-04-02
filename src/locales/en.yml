@@ -8,7 +8,7 @@ en:
   core.setting.getSettingPathFailed: Failed to get the setting path.
   core.setting.settingPathNotFound: The setting path was not found.
   core.setting.wallpaperNotFound: There was no file or folder named %{targets} in %{place}.
-  core.setting.failedRead: "%{path} was not found."
+  core.setting.failedRead: Failed to read %{path}.
   core.setting.alreadyAdded: "%{name} is already added."
   core.setting.copyFailed: Failed to copy ${path}.
   core.setting.loadJsonFailed: Failed to load json.

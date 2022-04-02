@@ -3,7 +3,7 @@
 use wry::webview::WebView;
 
 pub use super::platform::Window;
-use super::{ platform::Rects, data_manager::Wallpaper };
+use super::{ platform::Rects, data_manager::{ Wallpaper, Shift } };
 
 
 /// 背景ウィンドウの状態を変更したりするための構造体のトレイトです。
@@ -13,10 +13,12 @@ pub trait WindowTrait {
     /// ウィンドウに透明度を設定します。
     fn set_transparent(&self, alpha: f64);
     /// ウィンドウの位置とサイズを変更します。
-    fn set_rect(&self, width: i32, height: i32, x: i32, y: i32);
+    /// Windowsの場合は`set_rect_from_vec`に書いてあるものが順番に渡されます。
+    fn set_rect(&self, shift: &Shift, width: i32, height: i32, x: i32, y: i32);
     /// Width,Height,x,yが入ったVectorからウィンドウの位置とサイズを変更します。
-    fn set_rect_from_vec(&self, rect: &Rects) {
-        self.set_rect(rect[0], rect[1], rect[2], rect[3]);
+    /// Windowsの場合はx(left),y(top),x(right),y(bottom)の左上と右下の位置となります。
+    fn set_rect_from_vec(&self, shift: &Shift, rect: &Rects) {
+        self.set_rect(shift, rect[0], rect[1], rect[2], rect[3]);
     }
     /// ウィンドウを一番前に一番前に表示し続けるかしないかを設定します。
     fn set_front(&mut self, front: bool);

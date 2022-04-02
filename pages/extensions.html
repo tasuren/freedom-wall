@@ -29,7 +29,7 @@
           let escapedKey = window.escapeHTML(key);
           div.innerHTML += `
             <label for="setting-${escapedKey}">${escapedKey}</label>
-            <input type="text" id="setting-${escapedKey}" class="setting" data-key="${escapedKey}" value="${window.escapeHTML(data.setting[key])}"></input>
+            <input type="text" id="setting-${escapedKey}" class="setting" data-key="${escapedKey}" value="${window.escapeHTML(data.setting[key])}">
           `;
         });
         div.innerHTML += `<br><br><button type="button" onclick="window._save('${name}');">Save</button>`;

@@ -11,7 +11,13 @@
   <script src="https://cdn.jsdelivr.net/npm/darkmode-js@1.5.7/lib/darkmode-js.min.js"></script>
   <script>
     function addDarkmodeWidget() {
-      new Darkmode().showWidget();
+      const options = {
+        time: "0.5s",
+        label: "🌓"
+      }
+
+      const darkmode = new Darkmode(options);
+      darkmode.showWidget();
     }
     window.addEventListener('load', addDarkmodeWidget);
   </script>
@@ -42,7 +48,6 @@
     window.onload = function () {
       // 違う言語は削除する。
       getLanguage(language => {
-        console.log(language);
         for (let element of document.getElementsByClassName("language")) {
           if (!element.classList.contains(language)) {
             element.hidden = true;
@@ -78,6 +83,7 @@
         <li><a href="./_setting.html">Setting</a></li>
         <li><a href="./_wallpapers.html">Wallpapers</a></li>
         <li><a href="./_extensions.html">Extensions</a></li>
+        <li><a href="./_credit.html">Credit</a></li>
       </ul>
     </div>
     <div class="content" id="main">

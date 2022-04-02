@@ -139,7 +139,7 @@ impl Manager {
         };
         // 設定画面のウィンドウを作る。
         manager.setting = Some(manager.make_setting_window(event_loop));
-        // 定期的にイベントを呼び出すためのスレッドを動かす。
+        // 定期的にウィンドウ位置更新をするタイミングを知らせるためのイベントを呼び出すスレッドを動かす。
         let cloned_proxy = manager.proxy.clone();
         let mut cloned_interval = Duration::from_secs_f32(manager.data.general.updateInterval);
         manager.heartbeat = Some(thread::spawn(move || {
@@ -301,7 +301,7 @@ impl Manager {
                                 && &window.target == title {
                             // もし対象のウィンドウなら背景ウィンドウのサイズの変更や移動をさせたりする。
                             window.set_front(main);
-                            window.set_rect_from_vec(&rect);
+                            window.set_rect_from_vec(&target.shift, &rect);
                             window.set_order(extra);
                             done.push(window.webview.window().id());
                             first = false;
@@ -361,7 +361,7 @@ impl Manager {
         let mut write_mode = "";
         let is_update = path[2] == "update";
 
-        println!("Request: {} {}", uri, data);
+        println!("API request: {} {}", uri, data);
 
         // リクエストを処理する。
         let tentative = match path[0] {
@@ -551,6 +551,12 @@ impl Manager {
                 // openFolder/.../...
                 // フォルダを開く。
                 utils::open_folder(data);
+                ok
+            },
+            "openWebsite" => {
+                // openWebsite/.../...
+                // ウェブサイトを開く。
+                utils::open_website(data);
                 ok
             },
             "getPath" => add_setting_path(""),

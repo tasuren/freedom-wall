@@ -37,6 +37,13 @@ pub fn open_folder(path: String) {
 }
 
 
+/// ウェブサイトを開きます。
+pub fn open_website(url: String) {
+    Command::new(if cfg!(target_os="macos") { "open" } else { "start" })
+        .arg(url).status().unwrap();
+}
+
+
 /// JavaScriptのテンプレートリテラルの文字列の中にそのまま埋め込んでも大丈夫なようにエスケープします。
 pub fn escape_for_js(text: String) -> String {
     text.replace("\\", "\\\\").replace("`", "\\`")
