@@ -1,7 +1,7 @@
 //! FreedomWall - DataManager
 
 use std::{
-    collections::HashMap, env::{ args, var }, path::{ Path, PathBuf },
+    collections::HashMap, env::args, path::{ Path, PathBuf },
     ffi::OsStr, fs::{ File, read_to_string, create_dir, rename, copy, remove_dir_all },
     io::Write, cell::RefCell
 };
