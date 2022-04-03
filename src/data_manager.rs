@@ -1,7 +1,7 @@
 //! FreedomWall - DataManager
 
 use std::{
-    collections::HashMap, env::args, path::{ Path, PathBuf },
+    collections::HashMap, env::{ args, var }, path::{ Path, PathBuf },
     ffi::OsStr, fs::{ File, read_to_string, create_dir, rename, copy, remove_dir_all },
     io::Write, cell::RefCell
 };
@@ -13,11 +13,31 @@ use rust_i18n::t;
 
 use super::APPLICATION_NAME;
 
+#[cfg(target_os="macos")]
+use super::platform::macos::get_bundle_path;
+
 
 const FAILED_JSON: &str = "JSON生成時にエラーが発生しました。";
 const DATA_DEFAULT: &str = r#"{
     "language": "en", "wallpapers": [], "updateInterval": 0.05, "dev": false
 }"#;
+
+
+/// ベースパスを取得します。
+/// 普通は`./`を返します。
+/// Macの場合はアプリに(Bundleに)した場合、カレントディレクトリが`/`になってしまうので、ビルド後のMac用アプリの場合は絶対パスが返されます。
+pub fn get_base() -> String {
+    #[cfg(target_os="windows")]
+    return "./".to_string();
+    #[cfg(target_os="macos")]
+    return if cfg!(debug_assertions) {
+        "./".to_string()
+    } else { format!("{}/Contents/Resources", get_bundle_path()) }
+}
+
+
+/// パスに`add_base`で取得したパスを最初に付けます。
+pub fn add_base(path: &str) -> String { format!("{}/{}", get_base(), path) }
 
 
 //  壁紙設定
@@ -270,14 +290,15 @@ fn read_wallpapers() -> Result<Wallpapers, String> {
 
 /// テンプレートを読み込みます。
 fn read_templates() -> Result<Templates, String> {
-    search_files("templates", vec!["index.html", "data.json"], |_,_,_,_| {}, false)?;
-    if let Some(data) = get_files(&PathBuf::from("templates"), true) {
+    let templates = add_base("templates");
+    search_files(&templates, vec!["index.html", "data.json"], |_,_,_,_| {}, false)?;
+    if let Some(data) = get_files(&PathBuf::from(&templates), true) {
         let mut result = Vec::new();
         for path in data {
             result.push(get_name(&path).to_string());
         };
         Ok(result)
-    } else { Err(t!("core.setting.failedRead", path="templates")) }
+    } else { Err(t!("core.setting.failedRead", path=&templates)) }
 }
 
 
@@ -437,7 +458,7 @@ impl DataManager {
                 // フォルダの作る。
                 match create_dir(&path) {
                     Ok(_) => {
-                        let original_path = &format!("templates/{}", template);
+                        let original_path = &format!("{}/{}", add_base("templates"), template);
                         // ファイルのコピーを行う。
                         for filename in vec!["index.html", "data.json"] {
                             if let Err(_) = copy(

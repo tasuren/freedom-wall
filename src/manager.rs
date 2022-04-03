@@ -25,7 +25,7 @@ use super::{
     window::{ Window, WindowTrait },
     data_manager::{
         DataManager, Wallpaper, WallpaperJson, Target,
-        add_setting_path
+        add_setting_path, add_base
     },
     platform::get_windows, APPLICATION_NAME, utils
 };
@@ -78,7 +78,7 @@ fn request2response(request: &Request) -> Result<Response, Error> {
 
     if let Ok(url) = Url::parse(uri) {
         if let Ok(path) = if uri.starts_with("wry://pages/") {
-            Ok(PathBuf::from(format!("pages/{}", url.path())))
+            Ok(PathBuf::from(format!("{}/{}", add_base("pages"), url.path())))
          } else { url.to_file_path() } {
             println!("File request: {}", uri);
             let test;

@@ -31,13 +31,19 @@ use core_foundation::{
         CFStringRef, CFStringCreateWithCString,
         CFStringGetLength, UniChar, kCFStringEncodingUTF8
     },
-    base::CFIndex
+    base::CFIndex, bundle::CFBundle
 };
 
 use super::super::{
     data_manager::{ Wallpaper, Shift }, window::WindowTrait,
     platform::{ Titles, ExtendedRects }
 };
+
+
+/// Bundleのパスを取得します。
+pub fn get_bundle_path() -> String {
+    CFBundle::main_bundle().path().unwrap().display().to_string()
+}
 
 
 pub struct Window {

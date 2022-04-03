@@ -21,8 +21,8 @@ use manager::{ UserEvents, Manager };
 use utils::{ error, escape_for_js };
 
 
-i18n!("locales/app");
-pub const VERSION: &str = "2.0.0a";
+i18n!("/Applications/FreedomWall.app/Contents/Resources/src/locales");
+pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 pub const APPLICATION_NAME: &str = "FreedomWall";
 
 
