@@ -58,6 +58,10 @@
       if (beforeWindowOnLoad) { beforeWindowOnLoad(); };
     };
 
+    window._safeName = function (name) {
+      return name.replace(/¥|\/|:|\*|\?|"|<|>|\|/g, "_");
+    };
+
     window.escapeHTML = function (str) {
       // HTMLをエスケープする関数
       return str.replace(/&/g, '&amp;').replace(/</g, '&lt;')

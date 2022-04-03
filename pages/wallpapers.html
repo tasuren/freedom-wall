@@ -98,7 +98,7 @@
     // 壁紙を追加する。
     postWallpaper(
       document.getElementById("add-wallpapers").value,
-      document.getElementById("new-wallpaper-name").value || template
+      window._safeName(document.getElementById("new-wallpaper-name").value) || template
     );
   };
 

@@ -107,13 +107,15 @@
 
                 // テンプレートから追加する。
                 window._addWallpaper = function (name) {
-                  targets.push({
-                    targets: ["nothing"], exceptions: [],
-                    alpha: 0.2, wallpaper: name, shift: {
-                      up: 0, down: 0, left: 0, right: 0
-                    }
-                  });
-                  postTargets(targets);
+                  if (name != "...") {
+                    targets.push({
+                      targets: ["nothing"], exceptions: [],
+                      alpha: 0.2, wallpaper: name, shift: {
+                        up: 0, down: 0, left: 0, right: 0
+                      }
+                    });
+                    postTargets(targets);
+                  };
                 };
 
                 original();
@@ -225,6 +227,9 @@
     <table>
       <tr class="language ja">
         <th>上</th><th>下</th><th>左</th><th>右</th>
+      </tr>
+      <tr class="language en">
+        <th>up</th><th>down</th><th>left</th><th>right</th>
       </tr>
       <tr>
         <td><input type="number" class="setting shift" id="up" step="5" value="0"></td>

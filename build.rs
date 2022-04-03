@@ -4,6 +4,9 @@ use std::{ fs::{ File, read }, io::Write };
 
 use tera::{ Tera, Context };
 
+#[cfg(target_os="windows")]
+use winres::WindowsResource;
+
 
 fn main_of_main() {
     // HTMLのレンダリングを行う。
@@ -46,5 +49,9 @@ fn main() {
 
 #[cfg(target_os="windows")]
 fn main() {
+    // アプリのアイコン等を設定する。
+    let mut res = WindowsResource::new();
+    res.set_icon("logo/FreedomWall.ico");
+    res.compile().unwrap();
     main_of_main();
 }

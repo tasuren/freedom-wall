@@ -1,5 +1,4 @@
 /target
-Cargo.lock
 *.*-workspace
 *.*-project
 .DS_Store
@@ -7,3 +6,5 @@ Cargo.lock
 _*.html
 pages/freedomwall/utils.js
 .vscode
+.bundle
+book

@@ -1,0 +1,9 @@
+[book]
+authors = ["tasuren"]
+src = "./docs"
+title = "FreedomWall"
+language = "en"
+
+[output.html]
+git-repository-url = "https://github.com/tasuren/FreedomWall"
+edit-url-template = "https://github.com/tasuren/FreedomWall/edit/master/guide/{path}"

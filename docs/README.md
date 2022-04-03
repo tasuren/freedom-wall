@@ -20,19 +20,7 @@ Therefore, you can set wallpaper safely without modifying any application.
 It also uses WebView to depict the wallpaper so that websites can be displayed.
 
 ## Download
-This can be downloaded [here](https://github.com/tasuren/FreedomWall/releases).  
-[This guide](http://freedomwall.f5.si) is an easy way to learn how to use it.
-
-## Build
-It needs [Rust](https://www.rust-lang.org/tools/install), so let's prepare that first.  
-
-### Windows
-Simply run `cargo build --release`.
-
-### Mac
-Install cargo-bundle with `cargo install cargo-bundle` and then `cargo bundle --release`.  
-The completed app file should be placed in the Applications folder and executed.  
-At this time error messages will not display properly if you do not do so.
+This can be downloaded [here](https://github.com/tasuren/FreedomWall/releases).
 
 ## Contributing
 See `contributing.md` in the repository.
