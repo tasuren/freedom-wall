@@ -22,9 +22,6 @@ It also uses WebView to depict the wallpaper so that websites can be displayed.
 ## Download
 This can be downloaded [here](https://github.com/tasuren/FreedomWall/releases).
 
-## Contributing
-See `contributing.md` in the repository.
-
 ## Screenshots
 ![FreedomWall2](https://user-images.githubusercontent.com/45121209/161414647-ef6d405f-8edb-4ea1-b0fb-3e4414be1f80.gif)  
 <img width="931" alt="FreedomWall Example LINE" src="https://user-images.githubusercontent.com/45121209/161413770-5b8616da-9509-4205-9f10-f62e52731a4f.png">
