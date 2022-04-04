@@ -1,0 +1,226 @@
+<!DOCTYPE HTML>
+<html lang="en" class="sidebar-visible no-js light">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Setting Wallpaper to Application - FreedomWall</title>
+        <!-- Custom HTML head -->
+        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff" />
+
+        <link rel="icon" href="../favicon.svg">
+        <link rel="shortcut icon" href="../favicon.png">
+        <link rel="stylesheet" href="../css/variables.css">
+        <link rel="stylesheet" href="../css/general.css">
+        <link rel="stylesheet" href="../css/chrome.css">
+        <link rel="stylesheet" href="../css/print.css" media="print">
+        <!-- Fonts -->
+        <link rel="stylesheet" href="../FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="../fonts/fonts.css">
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="../highlight.css">
+        <link rel="stylesheet" href="../tomorrow-night.css">
+        <link rel="stylesheet" href="../ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+    </head>
+    <body>
+        <!-- Provide site root to javascript -->
+        <script type="text/javascript">
+            var path_to_root = "../";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script type="text/javascript">
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script type="text/javascript">
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('no-js')
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add('js');
+        </script>
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script type="text/javascript">
+            var html = document.querySelector('html');
+            var sidebar = 'hidden';
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            }
+            html.classList.remove('sidebar-visible');
+            html.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="../index.html">Introduction</a></li><li class="chapter-item expanded "><a href="../quickstart/register_wallpaper.html"><strong aria-hidden="true">1.</strong> Register Wallpaper</a></li><li class="chapter-item expanded "><a href="../quickstart/setup_to_app.html" class="active"><strong aria-hidden="true">2.</strong> Setting Wallpaper to Application</a></li><li class="chapter-item expanded "><a href="../quickstart/end.html"><strong aria-hidden="true">3.</strong> End</a></li><li class="chapter-item expanded "><a href="../setting/detail.html"><strong aria-hidden="true">4.</strong> Setting Detail</a></li><li class="chapter-item expanded "><a href="../setting/language.html"><strong aria-hidden="true">5.</strong> Language</a></li><li class="chapter-item expanded "><a href="../setting/wallpaper.html"><strong aria-hidden="true">6.</strong> Wallpaper Settings</a></li><li class="chapter-item expanded "><a href="../setting/draw_interval.html"><strong aria-hidden="true">7.</strong> Draw Interval</a></li><li class="chapter-item expanded "><a href="../setting/developer_mode.html"><strong aria-hidden="true">8.</strong> Developer Mode</a></li><li class="chapter-item expanded "><a href="../extension/detail.html"><strong aria-hidden="true">9.</strong> Extension Detail</a></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky bordered">
+                    <div class="left-buttons">
+                        <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </button>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light (default)</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">FreedomWall</h1>
+
+                    <div class="right-buttons">
+                        <a href="../print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+                        <a href="https://github.com/tasuren/FreedomWall" title="Git repository" aria-label="Git repository">
+                            <i id="git-repository-button" class="fa fa-github"></i>
+                        </a>
+                        <a href="https://github.com/tasuren/FreedomWall/edit/master/guide/./docs/quickstart/setup_to_app.md" title="Suggest an edit" aria-label="Suggest an edit">
+                            <i id="git-edit-button" class="fa fa-edit"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script type="text/javascript">
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1 id="setting-wallpaper-to-application"><a class="header" href="#setting-wallpaper-to-application">Setting Wallpaper to Application</a></h1>
+<p>Finally, apply the desired wallpaper to the application.</p>
+<p><img src="https://user-images.githubusercontent.com/45121209/161428752-5eb0fa40-5b3e-4990-9439-ef934bc93522.png" alt="Settings Wallpaper" /></p>
+<p>Click <code>Setting</code> on the left menu to go to the setting screen.<br />
+Select the wallpaper you created earlier from the <code>Select Box</code> in <code>Add: Select Box</code>.<br />
+This adds a setting named <code>nothing</code>.<br />
+Click it to go to the detailed setting screen.</p>
+<h2 id="target"><a class="header" href="#target">Target</a></h2>
+<p>Enter the text contained in the title of the application window to which you want to add the wallpaper.<br />
+On a Mac, enter the text found in the application name, not the window title.<br />
+Multiple specifications can be specified by using commas (<code>,</code>).</p>
+<h2 id="exception"><a class="header" href="#exception">Exception</a></h2>
+<p>Exception to set no wallpaper.<br />
+You will not set wallpaper for windows that contain the characters you type.<br />
+For example, let's say you wallpaper an app called Discord, and then use your browser to view Discord-related web pages.<br />
+And suppose the title of your web page contains <code>Discord</code>.<br />
+If the browser puts the title in the window title, the wallpaper is also set in the browser.<br />
+This configuration is to deal with this.<br />
+Like the Target setting, you can specify multiple targets by commas.</p>
+<h2 id="transparency"><a class="header" href="#transparency">Transparency</a></h2>
+<p>As described in <code>How</code> on the first page, the software simulates the translucent wallpaper by displaying a window on top of the application.<br />
+This is its transparency setting.</p>
+<h2 id="adjustment"><a class="header" href="#adjustment">Adjustment</a></h2>
+<p>You can adjust the size of this setting.<br />
+You can change the display position or size of the wallpaper.<br />
+This is useful if the window has a special shape or you want to display partial wallpaper.<br />
+Raise a value of <code>left 'or </code>right' if you want to shift left and right.<br />
+For example, if you want to shift to the right, you can increase the value of <code>left</code> to put a space on the left.<br />
+If you want to move up or down, increase the value of <code>up</code> or <code>down</code>.<br />
+For example, if you want to shift it down, you can increase <code>up</code> to put a space above it.<br />
+Of course, negative values are also supported.<br />
+That is, it can shrink.</p>
+<h3 id="example"><a class="header" href="#example">Example</a></h3>
+<p>In this example, the wallpaper is applied only to the black areas in the terminal.</p>
+<h4 id="before"><a class="header" href="#before">Before</a></h4>
+<p>The wallpaper is also reflected in the bar and tabs above.<br />
+Depending on the wallpaper, it may be noticeable.<br />
+<img src="https://user-images.githubusercontent.com/45121209/161429973-8268849b-da4f-4224-9419-d4588f6beaa0.png" alt="Adjust Example Before" /></p>
+<h4 id="after"><a class="header" href="#after">After</a></h4>
+<p>Fixed<br />
+By this setting: <code>up: 55, down: -55</code><br />
+<img src="https://user-images.githubusercontent.com/45121209/161429970-cbe20f05-194d-49f7-a9eb-86875b57d662.png" alt="Adjust Example After" /></p>
+<h2 id="save--delete"><a class="header" href="#save--delete">Save / Delete</a></h2>
+<p>It is possible with the two buttons at the bottom.</p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../quickstart/register_wallpaper.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+                            <a rel="next" href="../quickstart/end.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../quickstart/register_wallpaper.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+                    <a rel="next" href="../quickstart/end.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+            </nav>
+
+        </div>
+
+        <script type="text/javascript">
+            window.playground_copyable = true;
+        </script>
+        <script src="../elasticlunr.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="../mark.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="../searcher.js" type="text/javascript" charset="utf-8"></script>
+        <script src="../clipboard.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="../highlight.js" type="text/javascript" charset="utf-8"></script>
+        <script src="../book.js" type="text/javascript" charset="utf-8"></script>
+
+        <!-- Custom JS scripts -->
+    </body>
+</html>
