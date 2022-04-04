@@ -227,7 +227,7 @@ impl Manager {
                             "\"{}\"",
                             self.data.extensions.iter().map(|x| x.path.replace("\"", "\\\""))
                                 .collect::<Vec<String>>().join("\", \"")
-                        ) }, if cfg!(target_os="windows") { "true" } else { "false" },
+                        ) }, cfg!(target_os="windows").to_string(),
                         self.count.to_string(), if data.detail.forceSize {
                             "// ウィンドウのサイズに壁紙のサイズを合わせるためのスクリプトを実行する。
                             let resizeElement = function (element) {
