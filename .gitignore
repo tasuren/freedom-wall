@@ -8,3 +8,5 @@ pages/freedomwall/utils.js
 .vscode
 .bundle
 book
+*.exe
+*.dmg
