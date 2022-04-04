@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+<head>
+  {% block head %}
+  <title>FreedomWall - {% block title %}{% endblock title %}</title>
+  <meta name="description" content="FreedomWall's Setting Page">
+  <meta name="author" content="tasuren">
+  <link rel="stylesheet" href="./style.css" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta charset="utf-8">
+  <script src="https://cdn.jsdelivr.net/npm/darkmode-js@1.5.7/lib/darkmode-js.min.js"></script>
+  <script>
+    function addDarkmodeWidget() {
+      const options = {
+        time: "0.5s",
+        label: "🌓"
+      }
+
+      const darkmode = new Darkmode(options);
+      darkmode.showWidget();
+    }
+    window.addEventListener('load', addDarkmodeWidget);
+  </script>
+  <script type="module">
+    import { getLanguage } from "./freedomwall/setting.js";
+
+    // ローディング表示の切り替えをする関数達です。
+    let toggleScrollable = function (open) {
+      document.getElementsByTagName("body")[0].style.overflow = open ? "hidden" : "auto";
+    };
+    window.loadingSetText = function (text) {
+      document.getElementById("loadingText").innerText = text;
+    };
+    window.loadingShow = function () {
+      let overlay = document.getElementById("fullOverlay");
+      toggleScrollable(true);
+      overlay.style.display = "block";
+      overlay.style.setProperty("z-index", 2147483647);
+    };
+    window.loadingHide = function () {
+      let overlay = document.getElementById("fullOverlay");
+      toggleScrollable(false);
+      overlay.style.display = "none";
+      overlay.style.setProperty("z-index", -1);
+    };
+
+    let beforeWindowOnLoad = window.onload;
+    window.onload = function () {
+      // 違う言語は削除する。
+      getLanguage(language => {
+        for (let element of document.getElementsByClassName("language")) {
+          if (!element.classList.contains(language)) {
+            element.hidden = true;
+          };
+        };
+        window.loadingHide();
+      });
+      if (beforeWindowOnLoad) { beforeWindowOnLoad(); };
+    };
+
+    window._safeName = function (name) {
+      return name.replace(/¥|\/|:|\*|\?|"|<|>|\|/g, "_");
+    };
+
+    window.escapeHTML = function (str) {
+      // HTMLをエスケープする関数
+      return str.replace(/&/g, '&amp;').replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+    };
+
+    window.addEventListener('beforeunload', (event) => {
+      window.loadingShow();
+    });
+  </script>
+  {% endblock head %}
+</head>
+<body style="overflow: hidden;">
+  <div id="fullOverlay">
+    <div class="text" id="loadingText">Now loading...</div>
+  </div>
+  <div class="container">
+    <div class="menu">
+      <h1>Freedom Wall</h1>
+      <ul>
+        <li><a href="./_home.html">Home</a></li>
+        <li><a href="./_setting.html">Setting</a></li>
+        <li><a href="./_wallpapers.html">Wallpapers</a></li>
+        <li><a href="./_extensions.html">Extensions</a></li>
+        <li><a href="./_credit.html">Credit</a></li>
+      </ul>
+    </div>
+    <div class="content" id="main">
+      {% block content %}{% endblock content %}
+    </div>
+  </div>
+</body>
+</html>

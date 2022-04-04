@@ -1,0 +1,18 @@
+---
+en:
+  core.general.findAppropriateWallpaperFailed: No wallpaper named %{name} was found.
+  core.general.processQueryParameterFailed: Failed to process query parameter.
+  core.general.searchWallpaperFailed: Failed to find a wallpaper.
+  core.setting.createSettingFolderFailed: Failed to create a configuration folder named %{path}.
+  core.setting.failedWrite: Failed to write to %{path}.
+  core.setting.getSettingPathFailed: Failed to get the setting path.
+  core.setting.settingPathNotFound: The setting path was not found.
+  core.setting.wallpaperNotFound: There was no file or folder named %{targets} in %{place}.
+  core.setting.failedRead: Failed to read %{path}.
+  core.setting.alreadyAdded: "%{name} is already added."
+  core.setting.copyFailed: Failed to copy ${path}.
+  core.setting.loadJsonFailed: Failed to load json.
+  core.setting.mkdirFailed: Failed to make folder %{path}.
+  core.setting.notAppropriateLanguage: No appropriate language found.
+  core.setting.removeDirFailed: Failed to remove folder.
+  core.setting.renameFailed: Failed to rename.

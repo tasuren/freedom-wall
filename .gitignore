@@ -1,0 +1,12 @@
+/target
+*.*-workspace
+*.*-project
+.DS_Store
+
+_*.html
+pages/freedomwall/utils.js
+.vscode
+.bundle
+book
+*.exe
+*.dmg

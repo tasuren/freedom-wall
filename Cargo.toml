@@ -1,0 +1,66 @@
+[package]
+name = "FreedomWall"
+version = "2.0.0"
+authors = ["tasuren <tasuren@aol.com>"]
+edition = "2021"
+description = "An application that allows you to add wallpaper to any window."
+readme = "README.md"
+license-file = "LICENSE"
+homepage = "https://freedomwall.f5.si"
+repository = "https://github.com/tasuren/FreedomWall"
+keywords = ["application", "wallpaper"]
+
+[target.'cfg(target_os="macos")'.dependencies]
+objc = "0.2.7"
+core-graphics = "0.22.3"
+core-foundation = "0.9.3"
+
+[target.'cfg(target_os="windows")'.dependencies.windows-sys]
+version = "0.34.0"
+features = [
+    "Win32_Foundation",
+    "Win32_UI_WindowsAndMessaging",
+    "Win32_Graphics_Dwm"
+]
+
+[dependencies]
+wry = { version = "0.14.0", features = ["devtools"] }
+mime_guess = "2.0.4"
+url = "2.2.2"
+urlencoding = "2.1.0"
+serde = "1.0.136"
+serde_json = "1.0.79"
+platform-dirs = "0.3.0"
+rfd = "0.8.1"
+lazy_static = "1.4.0"
+rust-i18n = "0.5.1"
+
+[build-dependencies]
+tera = "1.15.0"
+
+[target.'cfg(target_os="windows")'.build-dependencies]
+winres = "0.1.12"
+
+[package.metadata.bundle]
+name = "FreedomWall"
+identifier = "io.github.tasuren.freedomwall"
+icon = ["logo/FreedomWall.png"]
+version = "2.0.0"
+resources = [
+    "pages/_*.html", "pages/NotFound.html", "pages/freedomwall", "pages/style.css",
+    "templates", "src/locales/en.yml", "src/locales/ja.yml"
+]
+copyright = "(c) tasuren 2022"
+category = "public.app-category.utilities"
+short_description = "This application allows you to add wallpaper to any application."
+long_description = """This application allows you to add wallpaper to any application.
+As for Discord of chat app, you can add wallpaper without violating the Terms of Service."""
+
+[package.metadata.winres]
+OriginalFilename = "FreedomWall.exe"
+LegalCopyright = "(c) tasuren 2022"
+
+[package.metadata.i18n]
+available-locales = ["en", "ja"]
+default-locale = "en"
+load-path = "src/locales"

@@ -1,0 +1,247 @@
+{% extends "layout.html" %}
+{% block title %}Home{% endblock title %}
+{% block head %}{{ super() }}
+<script type="module">
+  import {
+    getLanguage, postLanguage,
+    getWallpapers as getTargets,
+    postWallpapers as postTargets,
+    getInterval, postInterval,
+    getDev, postDev
+  } from "./freedomwall/setting.js";
+  import { getWallpapers } from "./freedomwall/wallpapers.js";
+  import { SILENT } from "./freedomwall/utils.js";
+  window._postDev = postDev;
+
+  let original = window.onload;
+  window.onload = function () {
+    let languageSelect = document.getElementById("language");
+    let params = (new URL(location)).searchParams;
+    if (params.has("target")) {
+      // 壁紙設定変更画面
+      document.getElementById("detail").hidden = false;
+      document.getElementById("normal").hidden = true;
+
+      getTargets(targets => {
+        let targetIndex = Number(params.get("target"));
+        for (let index in targets)
+          if (index == targetIndex) {
+            document.getElementById("usedWallpaper").innerText = targets[index].wallpaper;
+
+            // 環境によって異なる文章になる部分を編集する。
+            if (!window.__WINDOWS__)
+              for (let element of document.getElementsByClassName("targetDescription"))
+                element.innerHTML = element.innerHTML
+                  .replace("window", "application")
+                  .replace("ウィンドウ", "アプリ");
+
+            // 設定されている値を書き込む。
+            console.log(JSON.stringify(targets[index]));
+            for (let element of document.getElementsByClassName("setting"))
+              if (element.classList.contains("shift"))
+                  element.value = targets[index].shift[element.id]
+              else element.value = targets[index][element.id];
+
+            // 設定保存
+            window._save = function () {
+              var data = {"shift": {}, "wallpaper": targets[index].wallpaper};
+              for (let element of document.getElementsByClassName("setting"))
+                if (element.classList.contains("shift"))
+                  data.shift[element.id] = Number(element.value)
+                else data[element.id] = element.id == "alpha" ?
+                  Number(element.value) : element.value ? element.value.split(",") : [];
+              targets[index] = data;
+              postTargets(targets, "./_setting.html");
+            };
+
+            // 設定削除
+            window._delete = function () {
+              targets.splice(index, 1);
+              postTargets(targets, "./_setting.html");
+            };
+
+            original();
+            return;
+          };
+
+        // もし設定が見つからなかった場合は戻る。
+        location = "./_setting.html";
+      });
+    } else
+      // 言語設定を現在設定されているものにセレクトしておく。
+      getLanguage(language => {
+        for (let element of languageSelect.getElementsByTagName("option")) {
+          if (element.value == language) {
+            element.selected = true;
+          };
+        };
+
+        // 使用可能な壁紙を追加する。
+        getWallpapers(wallpapers => {
+          let select = document.getElementById("add-wallpapers");
+
+          Object.keys(wallpapers).forEach(key =>
+            select.innerHTML += `<option value="${key}">${key}</option>`
+          );
+
+          getTargets(targets => {
+            // 壁紙設定
+            let ul = document.getElementById("targetList");
+            for (let index in targets)
+              ul.innerHTML += `
+                <li><a href="./_setting.html?target=${index}">
+                  ${window.escapeHTML(targets[index].targets.join(","))}
+                </a></li>
+              `;
+
+            getInterval(interval => {
+              // インターバル設定
+              let intervalInput = document.getElementById("interval");
+              intervalInput.value = interval;
+              window._postInterval = function () {
+                postInterval(Number(intervalInput.value));
+              };
+              getDev(mode => {
+                // 開発者モード
+                document.getElementById("devMode").checked = mode;
+
+                // テンプレートから追加する。
+                window._addWallpaper = function (name) {
+                  if (name != "...") {
+                    targets.push({
+                      targets: ["nothing"], exceptions: [],
+                      alpha: 0.2, wallpaper: name, shift: {
+                        up: 0, down: 0, left: 0, right: 0
+                      }
+                    });
+                    postTargets(targets);
+                  };
+                };
+
+                original();
+              });
+            });
+          });
+        });
+      });
+  };
+  window._postLanguage = postLanguage;
+</script>
+{% endblock head %}
+{% block content %}
+  <div class="wrapped-content" id="normal">
+    <h1 id="subject">Setting</h1>
+    <div class="language ja">ここでは壁紙等の設定を行うことができます。</div>
+    <div class="language en">Here you can set wallpaper and other settings.</div>
+    <h2 class="language en">Language</h2>
+    <h2 class="language ja">言語設定</h2>
+    <select onchange="window._postLanguage(this.value);" id="language" name="language">
+      <option value="en">English</option>
+      <option value="ja">日本語</option>
+    </select>
+    <h2 class="language en">Wallpaper Settings</h2>
+    <h2 class="language ja">壁紙設定</h2>
+    <div class="language ja">
+      ここではどのアプリにどの壁紙を付けるかの設定をすることができます。<br>
+      設定する壁紙はWallpapersから登録してください。<br>
+      右のSaveを押すことで設定の保存をすることができます。<br>
+      設定を削除したい場合は対象の入力欄を空にしてください。
+    </div>
+    <div class="language en">
+      Here you can set which wallpaper will be attached to which application.<br>
+      Please register the wallpaper to be set from Wallpapers.<br>
+      You can save your settings by pressing Save on the right.<br>
+      If you want to delete a setting, leave the target entry field empty.
+    </div>
+    <br>
+    <label for="add-wallpapers" class="language en">Add:</label>
+    <label for="add-wallpapers" class="language ja">追加：</label>
+    <select onchange="window._addWallpaper(this.value);" name="add-wallpapers" id="add-wallpapers">
+      <option value="..." selected>...</option>
+    </select>
+    <br>
+    <ul id="targetList"></ul>
+    <h2 class="language en">Draw interval</h2>
+    <h2 class="language ja">背景ウィンドウ調整間隔</h2>
+    <div class="language ja">
+      背景ウィンドウの位置とサイズを調整する間隔を設定します。
+    </div>
+    <div class="language en">
+      Sets the interval at which to adjust the position and size of the background window.
+    </div><br>
+    <input type="number" step="0.01" id="interval" min="0" max="5" value="">
+    <button type="button" id="saveInterval" onclick="window._postInterval();">Save</button>
+    <h2 class="language en">Developer mode</h2>
+    <h2 class="language ja">開発者モード</h2>
+    <input type="checkbox" id="devMode" onclick="window._postDev(this.checked);">
+  </div>
+  <div class="wrapped-content" id="detail" hidden>
+    <a href="./_setting.html" class="language ja">戻る</a>
+    <a href="./_setting.html" class="language en">Back</a>
+    <h1 class="language ja">壁紙適用設定</h1>
+    <h1 class="language en">Wallpaper setting</h1>
+    <h2 class="language ja">壁紙</h2>
+    <h2 class="language en">Wallpaper</h2>
+    <p id="usedWallpaper"></p>
+    <h2 class="language ja">対象</h2>
+    <h2 class="language en">Target</h2>
+    <div class="language ja targetDescription">
+      背景を適用する対象のウィンドウの名前に含まれる文字です。<br>
+      カンマ(<code>,</code>)で複数指定できます。
+    </div>
+    <div class="language en targetDescription">
+      The letter in the name of the window to which the background is to be applied.<br>
+      You can use commas (<code>,</code>) to specify multiple items.
+    </div><br>
+    <input type="text" id="targets" class="setting">
+    <h2 class="language ja">例外</h2>
+    <h2 class="language en">Exception</h2>
+    <div class="language ja">
+      これは特定の文字列が含まれている場合は背景対象としないというものです。<br>
+      例えば、Discordというアプリに背景を付けたい際に、ブラウザ等でDiscordがタイトルに含まれるWebページにアクセスした場合、ブラウザにも壁紙が適用されることがあります。<br>
+      この場合は例外にブラウザ名を入れれば良いです。<br>
+      対象設定同様カンマ(<code>,</code>)で複数指定することができます。
+    </div>
+    <div class="language en">
+      This means that if it contains a specific string, it will not be included in the background.<br>
+      For example, if you want to add a background to an application called Discord, and you access a web page with Discord included in the title using a browser, the wallpaper may be applied to the browser.<br>
+      In this case, you can use the browser name as an exception.<br>
+      Like target settings, you can use commas (<code>,</code>) to specify multiple items.
+    </div><br>
+    <input type="text" id="exceptions" class="setting">
+    <h2 class="language ja">透明度</h2>
+    <h2 class="language en">Transparency</h2>
+    <p class="language ja"><code>1</code>が不透明で<code>0</code>が完全な透明です。</p>
+    <p class="language en"><code>1</code> is opaque and <code>0</code> is completely transparent.</p>
+    <input class="setting" id="alpha" min="0.0" max="1.0" step="0.05" type="number" value="0.2">
+    <h2 class="language ja">調整</h2>
+    <h2 class="language en">Adjustment</h2>
+    <div class="language ja">
+      背景のサイズを調整します。<br>例えば、特定の位置だけ背景を付けたいなどの場合等にこれが便利です。<br>
+    </div>
+    <div class="language en">
+      Adjustment wallpaper size.<br>This is useful, for example, when you want to add a background only at a specific location.<br>
+    </div>
+    <br>
+    <table>
+      <tr class="language ja">
+        <th>上</th><th>下</th><th>左</th><th>右</th>
+      </tr>
+      <tr class="language en">
+        <th>up</th><th>down</th><th>left</th><th>right</th>
+      </tr>
+      <tr>
+        <td><input type="number" class="setting shift" id="up" step="5" value="0"></td>
+        <td><input type="number" class="setting shift" id="down" step="5" value="0"></td>
+        <td><input type="number" class="setting shift" id="left" step="5" value="0"></td>
+        <td><input type="number" class="setting shift" id="right" step="5" value="0"></td>
+      </tr>
+    </table>
+    <br>
+    <button type="button" onclick="window._save();" class="language ja">保存</button>
+    <button type="button" onclick="window._save();" class="language en">Save</button>
+    <button type="button" onclick="window._delete();" class="language ja">削除</button>
+    <button type="button" onclick="window._delete();" class="language en">Delete</button>
+    <br>
+  </div>
+{% endblock content %}
