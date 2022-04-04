@@ -48,7 +48,7 @@ icon = ["logo/FreedomWall.png"]
 version = "2.0.0"
 resources = [
     "pages/_*.html", "pages/NotFound.html", "pages/freedomwall", "pages/style.css",
-    "templates", "src/locales"
+    "templates", "src/locales/en.yml", "src/locales/ja.yml"
 ]
 copyright = "(c) tasuren 2022"
 category = "public.app-category.utilities"
