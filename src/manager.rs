@@ -289,6 +289,11 @@ impl Manager {
         // 背景を設定すべきウィンドウを探す。
         for (title, (rect, main, extra)) in titles.iter().zip(rects) {
             if title.contains("FreedomWall") { continue; };
+            // 開発者ツールは無視する。そうしないと設定によっては壁紙を付け続ける無限ループが作られてしまう。
+            // Macの場合はアプリ名をチェックするのでこれは実行しなくても良い。
+            #[cfg(target_os="windows")]
+            if self.data.general.dev && title.contains("DevTools") { continue; };
+
             let mut make = None;
             for target in self.data.general.wallpapers.iter() {
                 // 背景を設定すべきウィンドウかどうかを調べる。

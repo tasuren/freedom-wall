@@ -34,8 +34,8 @@ export function getLanguage(callback) {
  * ```
  * @param {list} wallpapers - This is the list that contains the objects above.
  */
-export function postWallpapers(wallpapers) {
-    request(POST, "setting/wallpapers/update", wallpapers, SILENT);
+export function postWallpapers(wallpapers, reload=true) {
+    request(POST, "setting/wallpapers/update", wallpapers, SILENT, false, reload);
 };
 
 

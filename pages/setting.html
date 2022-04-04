@@ -51,13 +51,13 @@
                 else data[element.id] = element.id == "alpha" ?
                   Number(element.value) : element.value ? element.value.split(",") : [];
               targets[index] = data;
-              postTargets(targets);
+              postTargets(targets, "./_setting.html");
             };
 
             // 設定削除
             window._delete = function () {
               targets.splice(index, 1);
-              postTargets(targets);
+              postTargets(targets, "./_setting.html");
             };
 
             original();

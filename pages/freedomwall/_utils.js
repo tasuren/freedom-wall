@@ -46,7 +46,9 @@ export function request(method, endpoint, body, callback, isResponseJson=false, 
         if (reload && window.loadingShow) window.loadingShow();
         if (status < 400) {
             callback(isResponseJson ? JSON.parse(data) : data);
-            if (reload) location.reload();
+            if (typeof reload == "string" || reload instanceof String)
+                location = reload
+            else if (reload) location.reload();
         } else {
             if (window.loadingShow) {
                 window.loadingSetText(data);
