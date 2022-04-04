@@ -96,6 +96,7 @@ impl WindowTrait for Window {
             hwnd: webview.window().hwnd() as _, webview: webview, id: id,
             wallpaper: data, target: target, front: false, first: true
         };
+        // タスクバーにウィンドウを表示しないようにする。
         window.webview.window().set_skip_taskbar(true);
         window
     }
