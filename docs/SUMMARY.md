@@ -6,8 +6,12 @@
 - [Setting Wallpaper to Application](quickstart/setup_to_app.md)
 - [End](quickstart/end.md)
 
-## Settings Detail
-Coming soon...
+## Setting Detail
+- [Setting Detail](setting/detail.md)
+- [Language](setting/language.md)
+- [Wallpaper Settings](setting/wallpaper.md)
+- [Draw Interval](setting/draw_interval.md)
+- [Developer Mode](setting/developer_mode.md)
 
 ## Extension
-Coming soon...
+- [Extension Detail](extension/detail.md)

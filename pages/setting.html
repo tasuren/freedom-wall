@@ -133,15 +133,14 @@
     <h1 id="subject">Setting</h1>
     <div class="language ja">ここでは壁紙等の設定を行うことができます。</div>
     <div class="language en">Here you can set wallpaper and other settings.</div>
-    <h2>General</h2>
-    <h3 class="language en">Language</h3>
-    <h3 class="language ja">言語設定</h3>
+    <h2 class="language en">Language</h2>
+    <h2 class="language ja">言語設定</h2>
     <select onchange="window._postLanguage(this.value);" id="language" name="language">
       <option value="en">English</option>
       <option value="ja">日本語</option>
     </select>
-    <h3 class="language en">Wallpaper settings</h3>
-    <h3 class="language ja">壁紙設定</h3>
+    <h2 class="language en">Wallpaper Settings</h2>
+    <h2 class="language ja">壁紙設定</h2>
     <div class="language ja">
       ここではどのアプリにどの壁紙を付けるかの設定をすることができます。<br>
       設定する壁紙はWallpapersから登録してください。<br>
@@ -162,8 +161,8 @@
     </select>
     <br>
     <ul id="targetList"></ul>
-    <h3 class="language en">Wallpaper window adjustment interval</h3>
-    <h3 class="language ja">背景ウィンドウ調整間隔</h3>
+    <h2 class="language en">Draw interval</h2>
+    <h2 class="language ja">背景ウィンドウ調整間隔</h2>
     <div class="language ja">
       背景ウィンドウの位置とサイズを調整する間隔を設定します。
     </div>
@@ -172,8 +171,8 @@
     </div><br>
     <input type="number" step="0.01" id="interval" min="0" max="5" value="">
     <button type="button" id="saveInterval" onclick="window._postInterval();">Save</button>
-    <h3 class="language en">Developer mode</h3>
-    <h3 class="language ja">開発者モード</h3>
+    <h2 class="language en">Developer mode</h2>
+    <h2 class="language ja">開発者モード</h2>
     <input type="checkbox" id="devMode" onclick="window._postDev(this.checked);">
   </div>
   <div class="wrapped-content" id="detail" hidden>
