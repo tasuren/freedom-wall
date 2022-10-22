@@ -6,7 +6,7 @@ edition = "2021"
 description = "An application that allows you to add wallpaper to any window."
 readme = "README.md"
 license-file = "LICENSE"
-homepage = "https://freedomwall.f5.si"
+homepage = "https://freedomwall.tasuren.xyz"
 repository = "https://github.com/tasuren/FreedomWall"
 keywords = ["application", "wallpaper"]
 
