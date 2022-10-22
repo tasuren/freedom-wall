@@ -1,4 +1,4 @@
-![GitHub all releases](https://img.shields.io/github/downloads/tasuren/FreedomWall/total) ![GitHub release (latest by date)](https://img.shields.io/github/v/release/tasuren/FreedomWall) [![Discord](https://img.shields.io/discord/777430548951728149?label=chat&logo=discord)](https://discord.gg/kfMwZUyGFG) [![Buy Me a Coffee](https://img.shields.io/badge/-tasuren-E9EEF3?label=Buy%20Me%20a%20Coffee&logo=buymeacoffee)](https://www.buymeacoffee.com/tasuren)
+![GitHub all releases](https://img.shields.io/github/downloads/tasuren/FreedomWall/total) ![GitHub release (latest by date)](https://img.shields.io/github/v/release/tasuren/FreedomWall) [![Discord](https://img.shields.io/discord/777430548951728149?label=chat&logo=discord)](https://discord.gg/kfMwZUyGFG)
 # FreedomWall
 This application allows you to add wallpaper to any application.  
 As for Discord of chat app, you can add wallpaper without violating the Terms of Service.
