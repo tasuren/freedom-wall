@@ -43,9 +43,8 @@ winres = "0.1.12"
 
 [package.metadata.bundle]
 name = "FreedomWall"
-identifier = "io.github.tasuren.freedomwall"
+identifier = "xyz.tasuren.freedomwall"
 icon = ["logo/FreedomWall.png"]
-version = "2.0.0"
 resources = [
     "pages/_*.html", "pages/NotFound.html", "pages/freedomwall", "pages/style.css",
     "templates", "src/locales/en.yml", "src/locales/ja.yml"
