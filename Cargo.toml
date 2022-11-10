@@ -27,7 +27,7 @@ features = [
 wry = { version = "0.14.0", features = ["devtools"] }
 mime_guess = "2.0.4"
 url = "2.2.2"
-urlencoding = "2.1.0"
+urlencoding = "2.1.2"
 serde = "1.0.136"
 serde_json = "1.0.79"
 platform-dirs = "0.3.0"
