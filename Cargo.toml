@@ -36,7 +36,7 @@ lazy_static = "1.4.0"
 rust-i18n = "0.5.1"
 
 [build-dependencies]
-tera = "1.15.0"
+tera = "1.17.0"
 
 [target.'cfg(target_os="windows")'.build-dependencies]
 winres = "0.1.12"
