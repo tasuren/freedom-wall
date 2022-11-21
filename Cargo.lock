@@ -1697,9 +1697,9 @@ dependencies = [
 
 [[package]]
 name = "rust-i18n"
-version = "0.6.1"
+version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "23355ba4db77e057f2a48a4edf15a01c0f914702ef8c47e91edfdde715782f04"
+checksum = "74fc70cf975ae6f84a016d477f05d475209edef8852ea0595754f7ea1f8019a7"
 dependencies = [
  "anyhow",
  "clap",
@@ -1717,9 +1717,9 @@ dependencies = [
 
 [[package]]
 name = "rust-i18n-extract"
-version = "0.4.0"
+version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d7fb5b67d1d524464f88971c489d3b9e0977e14d4d33de86137f082ffae92f5e"
+checksum = "38ebea791b21c5bb7b40686ccab333f36b0b29ec29674fec08ea5987c7cfdbbb"
 dependencies = [
  "anyhow",
  "ignore",
