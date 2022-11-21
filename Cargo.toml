@@ -26,7 +26,7 @@ features = [
 [dependencies]
 wry = { version = "0.19.0", features = ["devtools"] }
 mime_guess = "2.0.4"
-url = "2.3.0"
+url = "2.3.1"
 urlencoding = "2.1.2"
 serde = "1.0.147"
 serde_json = "1.0.87"
