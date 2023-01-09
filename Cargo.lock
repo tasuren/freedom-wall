@@ -2004,9 +2004,9 @@ dependencies = [
 
 [[package]]
 name = "rust-i18n"
-version = "1.0.1"
+version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "74fc70cf975ae6f84a016d477f05d475209edef8852ea0595754f7ea1f8019a7"
+checksum = "b879314a0ef8685a623cca2a3dde1a695712af0b657103948ad92c09ee08c221"
 dependencies = [
  "anyhow",
  "clap",
@@ -2024,16 +2024,16 @@ dependencies = [
 
 [[package]]
 name = "rust-i18n-extract"
-version = "1.0.0"
+version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "38ebea791b21c5bb7b40686ccab333f36b0b29ec29674fec08ea5987c7cfdbbb"
+checksum = "ec44568e2cdf4bfb7a62381bbc6fcdf0a27c60cd503dfa12c59e6c17cf3177fa"
 dependencies = [
  "anyhow",
  "ignore",
  "proc-macro2",
  "quote",
  "regex",
- "rust-i18n-support",
+ "rust-i18n-support 1.1.0",
  "serde",
  "serde_json",
  "serde_yaml",
@@ -2042,15 +2042,15 @@ dependencies = [
 
 [[package]]
 name = "rust-i18n-macro"
-version = "0.4.0"
+version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "eaebf89167a1d6483d77f316c49b21acd7b3e7cc8a9898c3ed7fe68975b7afca"
+checksum = "6e7e3e8f27d472822c5cf092a22631ebc667d9f8dc89dfc50ef4e87f4ebdf92f"
 dependencies = [
  "glob",
  "once_cell",
  "proc-macro2",
  "quote",
- "rust-i18n-support",
+ "rust-i18n-support 0.4.0",
  "serde",
  "serde_json",
  "serde_yaml",
@@ -2062,6 +2062,20 @@ name = "rust-i18n-support"
 version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "821e80941e07163f29da56e77bf4107950e6215328cd40d4cb72974d4a82e08c"
+dependencies = [
+ "glob",
+ "once_cell",
+ "proc-macro2",
+ "serde",
+ "serde_json",
+ "serde_yaml",
+]
+
+[[package]]
+name = "rust-i18n-support"
+version = "1.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9e6bbf2d058c3558bef952564ceb9afcb19631cde22b47dc44f436e62ecfb916"
 dependencies = [
  "glob",
  "once_cell",
