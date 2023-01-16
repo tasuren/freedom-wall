@@ -24,7 +24,7 @@ features = [
 ]
 
 [dependencies]
-wry = { version = "0.23.4", features = ["devtools"] }
+wry = { version = "0.24.1", features = ["devtools"] }
 mime_guess = "2.0.4"
 url = "2.3.1"
 urlencoding = "2.1.2"
