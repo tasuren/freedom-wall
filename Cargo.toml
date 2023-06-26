@@ -12,7 +12,7 @@ keywords = ["application", "wallpaper"]
 
 [target.'cfg(target_os="macos")'.dependencies]
 objc = "0.2.7"
-core-graphics = "0.22.3"
+core-graphics = "0.23.0"
 core-foundation = "0.9.3"
 
 [target.'cfg(target_os="windows")'.dependencies.windows-sys]
