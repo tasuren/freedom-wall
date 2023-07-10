@@ -7,7 +7,7 @@ name = "FreedomWall"
 version = "2.0.0"
 dependencies = [
  "core-foundation",
- "core-graphics 0.23.0",
+ "core-graphics 0.23.1",
  "lazy_static",
  "mime_guess",
  "objc",
@@ -394,9 +394,9 @@ dependencies = [
 
 [[package]]
 name = "core-graphics"
-version = "0.23.0"
+version = "0.23.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "506752f2b58723339d41d013009be97e549860785a366e2a5e75dfbd9725b48e"
+checksum = "970a29baf4110c26fedbc7f82107d42c23f7e88e404c4577ed73fe99ff85a212"
 dependencies = [
  "bitflags",
  "core-foundation",
