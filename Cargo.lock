@@ -2060,9 +2060,9 @@ dependencies = [
 
 [[package]]
 name = "rust-i18n"
-version = "2.0.0"
+version = "2.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9a516a7ceb61ddcdad9cf723de82b86f6ed8c78ebe25255c5686a061bf7318a6"
+checksum = "074e2507aedea43bdeb742cb55fc339a0704625050c9532a226c7ddbd1a05f62"
 dependencies = [
  "anyhow",
  "clap",
@@ -2076,7 +2076,7 @@ dependencies = [
  "rust-i18n-support",
  "serde",
  "serde_derive",
- "toml 0.5.8",
+ "toml 0.7.5",
 ]
 
 [[package]]
