@@ -6,6 +6,8 @@ As for Discord of chat app, you can add wallpaper without violating the Terms of
 Currentrly, Windows and MacOS are supported.
 (Linux will be supported at some point, as indicated in [this issue](https://github.com/tasuren/FreedomWall/issues/14).)  
 
+**Warning: This is early stage.**
+
 ![FreedomWall](https://user-images.githubusercontent.com/45121209/161414150-61a726fb-60be-4007-964a-448d62d6c60a.gif)
 
 ## Supported Files
