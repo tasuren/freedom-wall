@@ -1,59 +1,57 @@
-//! FreedomWall - Impl for Windows
-
 use std::mem::size_of;
 
-use wry::{
-    webview::WebView,
-    application::{
-        platform::windows::WindowExtWindows
-    }
-};
+use wry::{application::platform::windows::WindowExtWindows, webview::WebView};
 
 use windows_sys::Win32::{
-    Foundation::{ HWND, LPARAM, BOOL, RECT },
+    Foundation::{BOOL, HWND, LPARAM, RECT},
+    Graphics::Dwm::{DwmGetWindowAttribute, DWMWA_EXTENDED_FRAME_BOUNDS},
     UI::WindowsAndMessaging::{
-        EnumWindows, SetLayeredWindowAttributes, SetWindowPos,
-        SetWindowLongA, GetWindowTextW, GetForegroundWindow, MoveWindow
+        EnumWindows, GetForegroundWindow, GetWindowTextW, MoveWindow, SetLayeredWindowAttributes,
+        SetWindowLongA, SetWindowPos,
     },
-    Graphics::Dwm::{
-        DwmGetWindowAttribute,
-        DWMWA_EXTENDED_FRAME_BOUNDS
-    }
 };
 
 use super::super::{
-    data_manager::{ Wallpaper, Shift }, window::WindowTrait,
-    platform::{ Titles, ExtendedRects }
+    data_manager::{Shift, Wallpaper},
+    platform::{ExtendedRects, Titles},
+    window::WindowTrait,
 };
-
 
 static mut DATA: (Titles, ExtendedRects) = (Vec::new(), Vec::new());
 static mut BEFORE: HWND = 0;
-
 
 /// `get_windows`内の`EnumWindows`に渡す関数です。
 unsafe extern "system" fn lpenumfunc(hwnd: HWND, _: LPARAM) -> BOOL {
     // ウィンドウのタイトルを取得する。
     let mut raw: [u16; 512] = [0; 512];
     let length = GetWindowTextW(hwnd, &mut raw as _, 512);
-    DATA.0.push(String::from_utf16_lossy(&raw[..length as usize]).to_string());
+    DATA.0
+        .push(String::from_utf16_lossy(&raw[..length as usize]).to_string());
     // ウィンドウのサイズ等を取得する。
-    let mut rect = RECT { left: 0, top: 0, right: 0, bottom: 0 };
+    let mut rect = RECT {
+        left: 0,
+        top: 0,
+        right: 0,
+        bottom: 0,
+    };
     DwmGetWindowAttribute(
-        hwnd, DWMWA_EXTENDED_FRAME_BOUNDS,
+        hwnd,
+        DWMWA_EXTENDED_FRAME_BOUNDS,
         &mut rect as *mut RECT as *mut _,
-        size_of::<RECT>() as u32
+        size_of::<RECT>() as u32,
     );
 
     DATA.1.push((
         [rect.left, rect.top, rect.right, rect.bottom],
-        GetForegroundWindow() == hwnd, BEFORE
+        GetForegroundWindow() == hwnd,
+        BEFORE,
     ));
-    if hwnd != 0 { BEFORE = hwnd; };
+    if hwnd != 0 {
+        BEFORE = hwnd;
+    };
 
     true.into()
 }
-
 
 /// 全てのウィンドウのタイトルやサイズ等を取得します。
 /// 二番目のVectorの三番目のisizeの値は、そのウィンドウの前にあるウィンドウのHWNDです。
@@ -67,7 +65,6 @@ pub fn get_windows() -> (Titles, ExtendedRects) {
     }
 }
 
-
 pub struct Window {
     pub webview: WebView,
     pub wallpaper: Wallpaper,
@@ -75,26 +72,26 @@ pub struct Window {
     pub id: usize,
     front: bool,
     hwnd: HWND,
-    first: bool
+    first: bool,
 }
-
 
 /// SetWindowPosでウィンドウのZ順の位置を変更します。
 fn set_order(hwnd: HWND, target: isize, more: u32) {
     unsafe {
-        SetWindowPos(
-            hwnd, target, 0, 0, 0, 0,
-            0x0010 | 0x0001 | 0x0002 | more
-        );
+        SetWindowPos(hwnd, target, 0, 0, 0, 0, 0x0010 | 0x0001 | 0x0002 | more);
     };
 }
-
 
 impl WindowTrait for Window {
     fn new(data: Wallpaper, webview: WebView, id: usize, target: String) -> Self {
         let window = Self {
-            hwnd: webview.window().hwnd() as _, webview: webview, id: id,
-            wallpaper: data, target: target, front: false, first: true
+            hwnd: webview.window().hwnd() as _,
+            webview: webview,
+            id: id,
+            wallpaper: data,
+            target: target,
+            front: false,
+            first: true,
         };
         // タスクバーにウィンドウを表示しないようにする。
         window.webview.window().set_skip_taskbar(true);
@@ -102,24 +99,29 @@ impl WindowTrait for Window {
     }
 
     fn set_transparent(&self, alpha: f64) {
-        assert_eq!(unsafe {
-            SetLayeredWindowAttributes(self.hwnd, 0, (255.0 * alpha) as u8, 0x00000002)
-        }, 1);
+        assert_eq!(
+            unsafe { SetLayeredWindowAttributes(self.hwnd, 0, (255.0 * alpha) as u8, 0x00000002) },
+            1
+        );
     }
 
     fn set_rect(&self, shift: &Shift, left: i32, top: i32, right: i32, bottom: i32) {
         unsafe {
             // Rectを調整する。
             let rect = RECT {
-                left: left, top: top,
-                right: right, bottom: bottom
+                left: left,
+                top: top,
+                right: right,
+                bottom: bottom,
             };
             // ウィンドウの位置等を更新する。
             MoveWindow(
-                self.hwnd, rect.left + shift.left, rect.top + shift.up,
+                self.hwnd,
+                rect.left + shift.left,
+                rect.top + shift.up,
                 (rect.right - rect.left).abs() + shift.right,
                 (rect.bottom - rect.top).abs() + shift.down,
-                1
+                1,
             );
         };
         self.webview.resize().unwrap();
@@ -144,13 +146,14 @@ impl WindowTrait for Window {
     }
 
     fn set_click_through(&mut self, toggle: bool) {
-        assert!(unsafe {
-            SetWindowLongA(
-                self.hwnd, -20,
-                if toggle {
-                    0x00080000 | 0x00000020
-                } else { 0 }
-            )
-        } != 0);
+        assert!(
+            unsafe {
+                SetWindowLongA(
+                    self.hwnd,
+                    -20,
+                    if toggle { 0x00080000 | 0x00000020 } else { 0 },
+                )
+            } != 0
+        );
     }
 }

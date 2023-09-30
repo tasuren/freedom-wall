@@ -1,5 +1,3 @@
-//! FreedomWall - Manager
-
 use std::{
     collections::HashMap,
     fs::{canonicalize, read},
@@ -9,11 +7,13 @@ use std::{
     time::Duration,
 };
 
-use rfd::FileDialog;
-use rust_i18n::{set_locale, t};
 use serde_json::{from_str, to_string};
+use smallvec::SmallVec;
 use url::Url;
 use urlencoding::decode;
+
+use rfd::FileDialog;
+use rust_i18n::{set_locale, t};
 use wry::{
     application::{
         event_loop::{EventLoopProxy, EventLoopWindowTarget},
@@ -129,10 +129,16 @@ impl Manager {
         event_loop: &EventLoopWindowTarget<UserEvents>,
         proxy: EventLoopProxy<UserEvents>,
     ) -> Result<Self, String> {
+        // デフォルトの設定。
+        set_locale("ja");
+
         let data = DataManager::new()?;
+
         // 言語設定を適用させる。
         set_locale(&data.general.language);
+
         let (tx, rx) = channel();
+
         let mut manager = Self {
             windows: Vec::new(),
             data: data,
@@ -144,29 +150,30 @@ impl Manager {
             heartbeat: None,
             count: 0,
         };
+
         // 設定画面のウィンドウを作る。
         manager.setting = Some(manager.make_setting_window(event_loop));
         // 定期的にウィンドウ位置更新をするタイミングを知らせるためのイベントを呼び出すスレッドを動かす。
         let cloned_proxy = manager.proxy.clone();
-        let mut cloned_interval = Duration::from_secs_f32(manager.data.general.updateInterval);
-        manager.heartbeat = Some(thread::spawn(move || {
-            loop {
-                if let Ok(new) = rx.recv_timeout(cloned_interval) {
-                    if new == 0.0 {
-                        break;
-                    } else {
-                        cloned_interval = Duration::from_secs_f32(new);
-                        thread::sleep(cloned_interval);
-                    };
-                };
-                if cloned_proxy
-                    .send_event(UserEvents::PassedInterval())
-                    .is_err()
-                {
+        let mut cloned_interval = Duration::from_secs_f32(manager.data.general.update_interval);
+
+        manager.heartbeat = Some(thread::spawn(move || loop {
+            if let Ok(new) = rx.recv_timeout(cloned_interval) {
+                if new == 0.0 {
                     break;
+                } else {
+                    cloned_interval = Duration::from_secs_f32(new);
+                    thread::sleep(cloned_interval);
                 };
-            }
+            };
+            if cloned_proxy
+                .send_event(UserEvents::PassedInterval())
+                .is_err()
+            {
+                break;
+            };
         }));
+
         Ok(manager)
     }
 
@@ -252,7 +259,7 @@ impl Manager {
                             self.data.extensions.iter().map(|x| x.path.replace("\"", "\\\""))
                                 .collect::<Vec<String>>().join("\", \"")
                         ) }, cfg!(target_os="windows").to_string(),
-                        self.count.to_string(), if data.detail.forceSize {
+                        self.count.to_string(), if data.detail.force_size {
                             "// ウィンドウのサイズに壁紙のサイズを合わせるためのスクリプトを実行する。
                             let resizeElement = function (element) {
                                 element.style.width = `${window.innerWidth}px`;
@@ -313,7 +320,7 @@ impl Manager {
         event_loop: &EventLoopWindowTarget<UserEvents>,
     ) -> Result<(), String> {
         let (titles, rects) = get_windows();
-        let mut done = Vec::new();
+        let mut done = SmallVec::<[_; 5]>::new();
         // DEBUG: println!("{}", self.windows.len());
 
         // 背景を設定すべきウィンドウを探す。
@@ -424,7 +431,7 @@ impl Manager {
                                 self.data.general.language = data;
                                 ok
                             } else {
-                                Err(t!("core.setting.notAppropriateLanguage"))
+                                Err(t!("core.general.notAppropriateLanguage"))
                             }
                         } else {
                             Ok(self.data.general.language.clone())
@@ -434,12 +441,12 @@ impl Manager {
                     "wallpapers" => {
                         if is_update {
                             if let Ok(wallpapers) = from_str::<Vec<Target>>(&data) {
-                                self.data.general.wallpapers = wallpapers;
+                                self.data.general.wallpapers = SmallVec::<_>::from(wallpapers);
                                 // 現在開かれている背景ウィンドウを消す。
                                 self.reset_windows();
                                 ok
                             } else {
-                                Err(t!("core.setting.loadJsonFailed"))
+                                Err(t!("core.general.loadJsonFailed"))
                             }
                         } else {
                             Ok(to_string(&self.data.general.wallpapers).unwrap())
@@ -449,14 +456,14 @@ impl Manager {
                     "interval" => {
                         if is_update {
                             if let Ok(value) = data.parse() {
-                                self.data.general.updateInterval = value;
+                                self.data.general.update_interval = value;
                                 self.heartbeat_sender.send(value).unwrap();
                                 ok
                             } else {
                                 Err("Failed to parse value.".to_string())
                             }
                         } else {
-                            Ok(self.data.general.updateInterval.to_string())
+                            Ok(self.data.general.update_interval.to_string())
                         }
                     }
                     // 開発者モードをONにするかどうか。
@@ -507,7 +514,7 @@ impl Manager {
                                     }
                                     Err(message) => Err(format!(
                                         "{}\nDetail: {}",
-                                        t!("core.setting.loadJsonFailed"),
+                                        t!("core.general.loadJsonFailed"),
                                         message.to_string()
                                     )),
                                 }
@@ -604,7 +611,7 @@ impl Manager {
                                         match self.data.write_extension(path[3].to_string()) {
                                             Ok(_) => ok,
                                             _ => {
-                                                Err(t!("core.setting.failedWrite", path = path[3]))
+                                                Err(t!("core.general.failedWrite", path = path[3]))
                                             }
                                         }
                                     }
@@ -635,7 +642,7 @@ impl Manager {
                         match FileDialog::new().pick_file() {
                             Some(path) => path.as_path().display().to_string(),
                             _ => {
-                                utils::error(&t!("core.setting.failedRead"));
+                                utils::error(&t!("core.general.failedRead"));
                                 panic!("Error occurred.");
                             }
                         },
@@ -730,7 +737,7 @@ impl Manager {
             let _ = self.heartbeat_sender.send(0.0);
             handle.join().expect("Failed to join heartbeat thread.");
         };
-        self.data.general.wallpapers = Vec::new();
+        self.data.general.wallpapers = SmallVec::<_>::new();
         self.reset_windows();
     }
 }

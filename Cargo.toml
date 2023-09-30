@@ -1,5 +1,5 @@
 [package]
-name = "FreedomWall"
+name = "freedom-wall"
 version = "2.0.1"
 authors = ["tasuren <tasuren@aol.com>"]
 edition = "2021"
@@ -32,8 +32,9 @@ serde = "1.0.136"
 serde_json = "1.0.79"
 platform-dirs = "0.3.0"
 rfd = "0.8.1"
+smallvec = { version = "1.11.1", features = ["serde"] }
 lazy_static = "1.4.0"
-rust-i18n = "0.5.1"
+rust-i18n = "2.2.1"
 
 [build-dependencies]
 tera = "1.15.0"
@@ -58,8 +59,3 @@ As for Discord of chat app, you can add wallpaper without violating the Terms of
 [package.metadata.winres]
 OriginalFilename = "FreedomWall.exe"
 LegalCopyright = "(c) tasuren 2022"
-
-[package.metadata.i18n]
-available-locales = ["en", "ja"]
-default-locale = "en"
-load-path = "src/locales"

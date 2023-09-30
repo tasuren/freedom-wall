@@ -1,10 +1,10 @@
-//! FreedomWall - Window
-
 use wry::webview::WebView;
 
 pub use super::platform::Window;
-use super::{ platform::Rects, data_manager::{ Wallpaper, Shift } };
-
+use super::{
+    data_manager::{Shift, Wallpaper},
+    platform::Rects,
+};
 
 /// 背景ウィンドウの状態を変更したりするための構造体のトレイトです。
 pub trait WindowTrait {
