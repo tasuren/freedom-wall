@@ -155,7 +155,8 @@ fn failed_read(path: String) -> String {
 fn get_files(target: &PathBuf, dir: bool) -> Option<Vec<PathBuf>> {
     match target.read_dir() {
         Ok(entries) => {
-            let mut result: Vec<PathBuf> = Vec::new();
+            let mut result = Vec::<PathBuf>::new();
+
             for tentative in entries {
                 if tentative.is_ok() {
                     let entry = tentative.unwrap().path();
@@ -287,7 +288,7 @@ fn read_setting() -> Result<GeneralSetting, String> {
 
     match from_str::<GeneralSetting>(&raw) {
         Ok(data) => Ok(data),
-        Err(e) => Err(format!("{}\nCode: {}", failed_read(path), e))
+        Err(e) => Err(format!("{}\nCode: {}", failed_read(path), e)),
     }
 }
 
@@ -309,7 +310,7 @@ fn read_wallpapers() -> Result<Wallpapers, String> {
                             *error.borrow_mut() = e;
                         };
                     };
-                    
+
                     if let Ok(data) = from_str::<WallpaperJson>(&raw) {
                         wallpapers.borrow_mut().push(Wallpaper {
                             name: get_name(dir).to_string(),

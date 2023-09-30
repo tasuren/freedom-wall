@@ -134,6 +134,7 @@ pub fn get_windows() -> (Titles, ExtendedRects) {
         )
     };
     let mut next_main = false;
+
     for index in 0..unsafe { CFArrayGetCount(windows) } {
         let data = unsafe { CFArrayGetValueAtIndex(windows, index) as CFDictionaryRef };
 

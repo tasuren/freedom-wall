@@ -101,7 +101,7 @@ fn request2response(request: &Request) -> Result<Response, Error> {
     ResponseBuilder::new()
         .header("Location", "wry://pages/not_found.html")
         .status(301)
-        .body(Vec::new())
+        .body(Vec::with_capacity(0))
 }
 
 /// リクエストをイベントでラップしてイベントループに送信します。
