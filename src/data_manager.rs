@@ -173,7 +173,7 @@ fn get_files(target: &PathBuf, dir: bool) -> Option<Vec<PathBuf>> {
 
 /// 渡されたPathBufから名前を取得します。
 fn get_name<'a>(path: &'a PathBuf) -> &'a str {
-    path.file_name().unwrap_or(&OsStr::new("")).to_str().unwrap()
+    path.file_name().unwrap_or_else(|| &OsStr::new("")).to_str().unwrap()
 }
 
 

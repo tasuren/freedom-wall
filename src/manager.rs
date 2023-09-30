@@ -112,7 +112,7 @@ fn request2waiter(proxy: EventLoopProxy<UserEvents>, request: &Request) -> Resul
         // APIリクエストのイベントを送信する。
         let _ = proxy.send_event(UserEvents::Request(RequestData {
             uri: request.uri().to_string(),
-            body: String::from_utf8(request.body.clone()).unwrap_or("".to_string()),
+            body: String::from_utf8(request.body.clone()).unwrap_or_else(|_| "".to_string()),
         }));
         ResponseBuilder::new()
             .header("Access-Control-Allow-Origin", "*")
