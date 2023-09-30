@@ -6,17 +6,17 @@ edition = "2021"
 description = "An application that allows you to add wallpaper to any window."
 readme = "README.md"
 license-file = "LICENSE"
-homepage = "https://freedomwall.tasuren.xyz"
-repository = "https://github.com/tasuren/FreedomWall"
+homepage = "https://freedom-wall.tasuren.jp"
+repository = "https://github.com/tasuren/freedom-wall"
 keywords = ["application", "wallpaper"]
 
 [target.'cfg(target_os="macos")'.dependencies]
 objc = "0.2.7"
-core-graphics = "0.23.1"
+core-graphics = "0.22.3"
 core-foundation = "0.9.3"
 
 [target.'cfg(target_os="windows")'.dependencies.windows-sys]
-version = "0.48.0"
+version = "0.34.0"
 features = [
     "Win32_Foundation",
     "Win32_UI_WindowsAndMessaging",
@@ -24,29 +24,29 @@ features = [
 ]
 
 [dependencies]
-wry = { version = "0.24.3", features = ["devtools"] }
+wry = { version = "0.14.0", features = ["devtools"] }
 mime_guess = "2.0.4"
-url = "2.4.1"
-urlencoding = "2.1.3"
-serde = "1.0.188"
-serde_json = "1.0.105"
+url = "2.2.2"
+urlencoding = "2.1.0"
+serde = "1.0.136"
+serde_json = "1.0.79"
 platform-dirs = "0.3.0"
-rfd = "0.10.0"
+rfd = "0.8.1"
 lazy_static = "1.4.0"
-rust-i18n = "2.2.1"
+rust-i18n = "0.5.1"
 
 [build-dependencies]
-tera = "1.17.0"
+tera = "1.15.0"
 
 [target.'cfg(target_os="windows")'.build-dependencies]
 winres = "0.1.12"
 
 [package.metadata.bundle]
 name = "FreedomWall"
-identifier = "xyz.tasuren.freedomwall"
+identifier = "jp.tasuren.freedomwall"
 icon = ["logo/FreedomWall.png"]
 resources = [
-    "pages/_*.html", "pages/NotFound.html", "pages/freedomwall", "pages/style.css",
+    "pages/_*.html", "pages/not_found.html", "pages/freedomwall", "pages/style.css",
     "templates", "src/locales/en.yml", "src/locales/ja.yml"
 ]
 copyright = "(c) tasuren 2022"

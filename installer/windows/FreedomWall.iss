@@ -42,7 +42,7 @@ Source: "..\..\target\release\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignorev
 Source: "..\..\src\locales\en.yml"; DestDir: "{app}\src"; Flags: ignoreversion
 Source: "..\..\src\locales\ja.yml"; DestDir: "{app}\src"; Flags: ignoreversion
 Source: "..\..\pages\_*.html"; DestDir: "{app}\pages"; Flags: ignoreversion
-Source: "..\..\pages\NotFound.html"; DestDir: "{app}\pages"; Flags: ignoreversion
+Source: "..\..\pages\not_found.html"; DestDir: "{app}\pages"; Flags: ignoreversion
 Source: "..\..\pages\style.css"; DestDir: "{app}\pages"; Flags: ignoreversion
 Source: "..\..\pages\freedomwall\*.js"; DestDir: "{app}\pages\freedomwall"; Flags: ignoreversion
 Source: "..\..\templates\*"; DestDir: "{app}\templates"; Flags: ignoreversion recursesubdirs
