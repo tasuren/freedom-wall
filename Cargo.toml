@@ -39,13 +39,18 @@ rust-i18n = "2.2.1"
 [build-dependencies]
 tera = "1.15.0"
 
+[profile.release]
+lto = true
+codegen-units = 1
+strip = true
+
 [target.'cfg(target_os="windows")'.build-dependencies]
-winres = "0.1.12"
+tauri-winres = "0.1.1"
 
 [package.metadata.bundle]
 name = "FreedomWall"
-identifier = "jp.tasuren.freedomwall"
-icon = ["logo/FreedomWall.png"]
+identifier = "jp.tasuren.freedom-wall"
+icon = ["logo/main.png"]
 resources = [
     "pages/_*.html", "pages/not_found.html", "pages/freedomwall", "pages/style.css",
     "templates", "src/locales/en.yml", "src/locales/ja.yml"
@@ -57,5 +62,5 @@ long_description = """This application allows you to add wallpaper to any applic
 As for Discord of chat app, you can add wallpaper without violating the Terms of Service."""
 
 [package.metadata.winres]
-OriginalFilename = "FreedomWall.exe"
+OriginalFilename = "main.exe"
 LegalCopyright = "(c) tasuren 2022"
