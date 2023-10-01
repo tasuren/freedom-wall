@@ -27,7 +27,6 @@ fn main() {
     let manager_option = Manager::new(&event_loop, event_loop.create_proxy());
 
     if let Err(message) = manager_option {
-        //let text = t!(&message);
         error(&message);
     } else {
         let mut manager = manager_option.unwrap();

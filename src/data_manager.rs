@@ -395,6 +395,14 @@ fn read_extensions() -> Result<Extensions, String> {
 /// もしデータが存在しない場合は壁紙プロファイルと拡張機能以外なら新規作成をします。
 impl DataManager {
     pub fn new() -> Result<Self, String> {
+        println!(
+            "Setting Path: \"{}\"",
+            AppDirs::new(Some(&get_application_name()), false)
+                .unwrap()
+                .data_dir
+                .display()
+        );
+
         let path = &add_setting_path("")?;
 
         if !Path::new(&path).exists() {
