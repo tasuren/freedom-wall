@@ -1,5 +1,3 @@
-//! FreedomWall - Build
-
 use std::{
     fs::{read, File},
     io::Write,
@@ -8,7 +6,7 @@ use std::{
 use tera::{Context, Tera};
 
 #[cfg(target_os = "windows")]
-use winres::WindowsResource;
+use tauri_winres::WindowsResource;
 
 fn main_of_main() {
     // HTMLのレンダリングを行う。

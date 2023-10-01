@@ -61,6 +61,6 @@ short_description = "This application allows you to add wallpaper to any applica
 long_description = """This application allows you to add wallpaper to any application.
 As for Discord of chat app, you can add wallpaper without violating the Terms of Service."""
 
-[package.metadata.winres]
+[package.metadata.tauri-winres]
 OriginalFilename = "main.exe"
 LegalCopyright = "(c) tasuren 2022"
