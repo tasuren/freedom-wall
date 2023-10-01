@@ -5,7 +5,7 @@
 #define MyAppVersion "2.0.1"
 #define MyAppPublisher "tasuren"
 #define MyAppURL "http://freedom-wall.tasuren.jp"
-#define MyAppExeName "main.exe"
+#define MyAppExeName "freedom-wall.exe"
 
 [Setup]
 ; NOTE: The value of AppId uniquely identifies this application. Do not use the same AppId value in installers for other applications.
@@ -38,7 +38,7 @@ Name: "japanese"; MessagesFile: "compiler:Languages\Japanese.isl"; LicenseFile: 
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 
 [Files]
-Source: "..\..\target\release\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\..\target\release\freedom-wall.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\..\pages\_*.html"; DestDir: "{app}\pages"; Flags: ignoreversion
 Source: "..\..\pages\not_found.html"; DestDir: "{app}\pages"; Flags: ignoreversion
 Source: "..\..\pages\style.css"; DestDir: "{app}\pages"; Flags: ignoreversion
