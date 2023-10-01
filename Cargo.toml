@@ -53,7 +53,7 @@ identifier = "jp.tasuren.freedom-wall"
 icon = ["logo/main.png"]
 resources = [
     "pages/_*.html", "pages/not_found.html", "pages/freedomwall", "pages/style.css",
-    "templates", "src/locales/en.yml", "src/locales/ja.yml"
+    "templates"
 ]
 copyright = "(c) tasuren 2022"
 category = "public.app-category.utilities"

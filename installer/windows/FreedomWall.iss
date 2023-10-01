@@ -2,10 +2,10 @@
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING INNO SETUP SCRIPT FILES!
 
 #define MyAppName "FreedomWall"
-#define MyAppVersion "2.0.0"
+#define MyAppVersion "2.0.1"
 #define MyAppPublisher "tasuren"
-#define MyAppURL "http://freedomwall.f5.si"
-#define MyAppExeName "FreedomWall.exe"
+#define MyAppURL "http://freedom-wall.tasuren.jp"
+#define MyAppExeName "main.exe"
 
 [Setup]
 ; NOTE: The value of AppId uniquely identifies this application. Do not use the same AppId value in installers for other applications.
@@ -39,8 +39,6 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 
 [Files]
 Source: "..\..\target\release\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
-Source: "..\..\src\locales\en.yml"; DestDir: "{app}\src"; Flags: ignoreversion
-Source: "..\..\src\locales\ja.yml"; DestDir: "{app}\src"; Flags: ignoreversion
 Source: "..\..\pages\_*.html"; DestDir: "{app}\pages"; Flags: ignoreversion
 Source: "..\..\pages\not_found.html"; DestDir: "{app}\pages"; Flags: ignoreversion
 Source: "..\..\pages\style.css"; DestDir: "{app}\pages"; Flags: ignoreversion
