@@ -299,7 +299,9 @@ impl Manager {
 
                 let mut new = Window::new(data, webview, self.count, target);
                 // 下準備をする。
-                new.set_click_through(true);
+                if !self.data.general.dev {
+                    new.set_click_through(true);
+                };
                 new.set_transparent(alpha);
                 // 開発者モードが有効なら開発者ツールを表示する。
                 if self.data.general.dev {
@@ -485,7 +487,7 @@ impl Manager {
                 // 全ての壁紙を取得します。または指定された壁紙を追加します。
                 "all" => {
                     if is_update {
-                        let data: Vec<&str> = data.split("?").collect();
+                        let data: SmallVec<[&str; 2]> = data.split("?").collect();
                         match self
                             .data
                             .add_wallpaper(data[0].to_string(), data[1].to_string())

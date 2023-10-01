@@ -11,7 +11,7 @@ import { request, SILENT, POST } from "./utils.js";
  *     "author": "Author",
  *     "description": "Description",
  *     "setting": {}, // Value passed as a query parameter to the wallpaper URL when loading the wallpaper.
- *     "forceSize": true // Whether to force the width and height of the style of the element with the background class to the window size.
+ *     "force_size": true // Whether to force the width and height of the style of the element with the background class to the window size.
  * }
  * ```
  * @param {function} callback - Callback to be passed wallpapers.

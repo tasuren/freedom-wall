@@ -57,7 +57,7 @@
           <label for="wallpaperForceSize" class="language ja">サイズ強制</label>
           <label for="wallpaperForceSize" class="language en">Force adjustment size</label>
           <br>
-          <input type="checkbox" class="wallpaperSetting" data-name="forceSize" name="wallpaperForceSize"${wallpaper.forceSize ? " checked" : ""}>
+          <input type="checkbox" class="wallpaperSetting" data-name="force_size" name="wallpaperForceSize"${wallpaper.force_size ? " checked" : ""}>
           <br><br>
           <button type="button" onclick="window._save('${escapedName}');" class="language ja">保存</button>
           <button type="button" onclick="window._save('${escapedName}');" class="language en">Save</button>
@@ -121,7 +121,7 @@
         data.setting[key] = element.value;
       } else if (key == "name" && element.value != name)
         callback = (_) => { updateWallpaper(name, element.value, "rename") }
-      else data[key] = key == "forceSize" ? element.checked : element.value;
+      else data[key] = key == "force_size" ? element.checked : element.value;
     };
     updateWallpaper(name, data, "write", callback || ((_) => {}), !Boolean(callback));
   };

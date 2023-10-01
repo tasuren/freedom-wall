@@ -4,5 +4,5 @@
     "setting": {
         "imagePath": "Url or path to image\n画像のパスまたはURL"
     },
-    "forceSize": true
+    "force_size": true
 }

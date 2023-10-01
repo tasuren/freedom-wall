@@ -17,7 +17,7 @@ mod window;
 use manager::{Manager, UserEvents};
 use utils::{error, escape_for_js};
 
-i18n!("locales");
+i18n!("src/locales");
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 pub const APPLICATION_NAME: &str = "FreedomWall";
 
