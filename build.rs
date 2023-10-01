@@ -56,7 +56,7 @@ fn main() {
 fn main() {
     // アプリのアイコン等を設定する。
     let mut res = WindowsResource::new();
-    res.set_icon("logo/FreedomWall.ico");
+    res.set_icon("logo/main.ico");
     res.compile().unwrap();
     main_of_main();
 }
