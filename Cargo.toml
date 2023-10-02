@@ -37,7 +37,7 @@ lazy_static = "1.4.0"
 rust-i18n = "2.2.1"
 
 [build-dependencies]
-tera = "1.15.0"
+tera = "1.17.0"
 
 [profile.release]
 lto = true
