@@ -1,8 +1,0 @@
-{
-    "author": "tasuren",
-    "description": "Picture wallpaper template\n画像の壁紙のテンプレート",
-    "setting": {
-        "imagePath": "Url or path to image\n画像のパスまたはURL"
-    },
-    "force_size": true
-}
